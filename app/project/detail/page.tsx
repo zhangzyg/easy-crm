@@ -1,3 +1,10 @@
+'use client';
+
+import ProjectDetail from "@/app/component/ProjectDetail";
+
 export default function ProjectDetailPage() {
-    return (<h1>"project detail"</h1>);
+    return (
+        <div>
+            <ProjectDetail />
+        </div>);
 }

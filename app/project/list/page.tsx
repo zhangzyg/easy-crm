@@ -1,3 +1,18 @@
+'use client'
+
+import BackButton from "@/app/component/BackButton";
+import ProjectList from "@/app/component/ProjectList";
+
 export default function ProjectListPage() {
-    return (<h1>"Project list"</h1>);
+    return (
+        <div>
+            <div>
+                <BackButton></BackButton>
+            </div>
+            <div>
+                <ProjectList></ProjectList>
+            </div>;
+        </div>
+    );
+
 }
