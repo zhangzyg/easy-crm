@@ -7,17 +7,21 @@ import { SearchOutlined } from '@ant-design/icons'
 import { useState, useRef } from 'react'
 import type { InputRef } from 'antd'
 
-interface DataType {
-  key: string
-  name: string
-  age: number
-  address: string
+interface Contact {
+  name: string;
+  mail: string;
+  phones: Array<string>;
+}
+interface CustomerInfo {
+  id: string;
+  name: string;
+  contact: Array<Contact>;
 }
 
-const data: DataType[] = [
-  { key: '1', name: '张三', age: 32, address: '上海' },
-  { key: '2', name: '李四', age: 42, address: '北京' },
-  { key: '3', name: '王五', age: 28, address: '广州' },
+const data: CustomerInfo[] = [
+  { id: '2', name: '公司B', contact: [{ name: '李四', mail: 'test@mail.com', phones: ['123', '45s6'] }] },
+  { id: '3', name: '公司C', contact: [{ name: '王五', mail: 'test@mail.com', phones: ['123', '45s6'] }] },
+  { id: '1', name: '公司A', contact: [{ name: '张三', mail: 'test@mail.com', phones: ['123', '45s6'] }] },
 ]
 
 const selectedKeys: string[] = [];
@@ -27,7 +31,7 @@ export default function CustomerList() {
   const [searchedColumn, setSearchedColumn] = useState('')
   const searchInput = useRef<InputRef>(null)
 
-  const getColumnSearchProps = (dataIndex: keyof DataType): ColumnType<DataType> => ({
+  const getColumnSearchProps = (dataIndex: keyof CustomerInfo): ColumnType<CustomerInfo> => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
       <div style={{ padding: 8 }}>
         <Input
@@ -35,7 +39,7 @@ export default function CustomerList() {
           placeholder={`搜索 ${dataIndex}`}
           value={selectedKeys[0]}
           onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-        //   onPressEnter={() => handleSearch([], confirm, dataIndex)}
+          //   onPressEnter={() => handleSearch([], confirm, dataIndex)}
           style={{ marginBottom: 8, display: 'block' }}
         />
         <Space>
@@ -88,25 +92,64 @@ export default function CustomerList() {
     setSearchText('')
   }
 
-  const columns: ColumnsType<DataType> = [
+  const columns: ColumnsType<CustomerInfo> = [
     {
-      title: '姓名',
+      title: '客户编号',
+      dataIndex: 'id',
+      key: 'id',
+      ...getColumnSearchProps('id'),
+      sorter: (a, b) => a.id.localeCompare(b.id),
+    },
+    {
+      title: '客户名称',
       dataIndex: 'name',
       key: 'name',
-      ...getColumnSearchProps('name'),
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: '年龄',
-      dataIndex: 'age',
-      key: 'age',
-      sorter: (a, b) => a.age - b.age,
+      title: '联系人',
+      dataIndex: 'contact',
+      key: 'contact',
+      render: (contact: Contact[]) => (
+        <div>
+          {contact.map((item, index) => (
+            <span>
+              {item.name}
+              {index < contact.length - 1 ? <br /> : null}
+            </span>
+          ))}
+        </div>
+      ),
+      ...getColumnSearchProps('contact'),
     },
     {
-      title: '地址',
-      dataIndex: 'address',
-      key: 'address',
-      ...getColumnSearchProps('address'),
+      title: '联系人邮箱',
+      dataIndex: 'contact',
+      key: 'contact',
+      render: (contact: Contact[]) => (
+        <div>
+          {contact.map((item, index) => (
+            <span>
+              {item.mail}
+              {index < contact.length - 1 ? <br /> : null}
+            </span>
+          ))}
+        </div>
+      ),
+      ...getColumnSearchProps('contact'),
+    },
+    {
+      title: '联系电话',
+      dataIndex: 'contact',
+      key: 'contact',
+      render: (contact: Contact[]) => (
+        <div>
+          {contact.map((item, index) => (
+            item.phones.map(phone, index) =>
+          ))}
+        </div>
+      ),
+      ...getColumnSearchProps('contact'),
     },
   ]
 
