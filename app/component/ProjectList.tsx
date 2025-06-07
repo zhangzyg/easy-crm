@@ -55,5 +55,5 @@ export default function ProjectList() {
             )
         }
     ];
-    return <Table columns={columns} dataSource={data} pagination={{ pageSize: 10 }}/>;
+    return <Table columns={columns} dataSource={data} pagination={{ pageSize: 15 }}/>;
 }
