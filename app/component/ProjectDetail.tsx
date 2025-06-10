@@ -3,14 +3,17 @@
 import { Card, Descriptions, Table, Button, Space, Modal, Form, Input, DatePicker, Select, message } from 'antd';
 import { useState } from 'react';
 import BackButton from './BackButton';
+import { genProjectId } from '../backend/util';
 
 const { Option } = Select;
 
-interface ProjectStep {
-    key: string;
+export interface ProjectStep {
+    id: string;
     date: string;
     stage: string;
-    status: string;
+    status_id: number;
+    mode: string;
+    project_id: string;
 }
 
 interface ProjectDetail {
@@ -18,6 +21,7 @@ interface ProjectDetail {
     productName: string;
     projectType: string;
     quoteAmount: string;
+    paidAmount: string;
     createdAt: string;
 }
 
@@ -27,18 +31,26 @@ export default function ProjectDetail() {
     const [form] = Form.useForm();
     const [editMode, setEditMode] = useState(false);
 
-    const handleAddStep = () => {
-        form.validateFields().then(values => {
+    const handleAddStep = async () => {
+        form.validateFields().then(async (values) => {
             const newStep: ProjectStep = {
-                key: `${Date.now()}`,
+                id: values.id ? values.id : genProjectId(),
                 date: values.date.format('YYYY-MM-DD'),
                 stage: values.stage,
-                status: values.status
+                status_id: values.status_id,
+                mode: 'init',
+                project_id: values.project_id
             };
             setSteps([...steps, newStep]);
             setIsModalOpen(false);
             form.resetFields();
+            await post('/backend/api/project/followup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newStep),
+            });
         });
+
     };
 
     const columns = [
@@ -58,7 +70,7 @@ export default function ProjectDetail() {
             key: 'status',
         },
         {
-            title: '操作',
+            title: '',
             key: 'action',
             render: (_: any, record: ProjectStep) => (
                 <Space>
@@ -67,15 +79,17 @@ export default function ProjectDetail() {
                     </Button>
                 </Space>
             ),
+            width: 10
         },
     ];
 
     const [data, setData] = useState<ProjectDetail>({
-        customerId: 'CUS-20240601',
-        productName: '企业级CRM系统',
-        projectType: '软件定制开发',
-        quoteAmount: '¥ 120,000',
-        createdAt: '2025-06-07',
+        customerId: '',
+        productName: '',
+        projectType: '',
+        quoteAmount: '',
+        paidAmount: '',
+        createdAt: '',
     });
 
     const handleEdit = () => {
@@ -166,8 +180,18 @@ export default function ProjectDetail() {
                                 )}
                             </Descriptions.Item>
 
+                            <Descriptions.Item label="报价金额" span={1}>
+                                {editMode ? (
+                                    <Form.Item name="paidAmount" rules={[{ required: true }]} noStyle>
+                                        <Input />
+                                    </Form.Item>
+                                ) : (
+                                    data.paidAmount
+                                )}
+                            </Descriptions.Item>
+
                             <Descriptions.Item label="项目创建时间" span={2}>
-                                    {data.createdAt}
+                                {data.createdAt}
                             </Descriptions.Item>
                         </Descriptions>
                     </Form>
@@ -206,4 +230,8 @@ export default function ProjectDetail() {
             </div>
         </div>
     );
+}
+
+function post(arg0: string, arg1: { method: string; headers: { 'Content-Type': string; }; body: string; }) {
+    throw new Error('Function not implemented.');
 }

@@ -1,31 +1,39 @@
 'use client'
+
 import { useState } from 'react'
 import { Button, Dropdown, Menu, Modal, Input, Tag } from 'antd'
-import { SketchPicker } from 'react-color';
+import { SketchPicker } from 'react-color'
 
-export type StatusOption = {
-  label: string
-  color: string
+interface StatusSelectorProps {
+  value?: number
+  onChange?: (id: number) => void
 }
 
-const initialStatusList: StatusOption[] = [
-  { label: '新建', color: '#87d068' },
-  { label: '进行中', color: '#108ee9' },
-  { label: '已完成', color: '#f50' },
-]
+export interface StatusOption {
+  id: number;
+  label: string;
+  color: string;
+  type: string;
+}
 
-export default function StatusSelector({ label }: { label: string }) {
+const initialStatusList: StatusOption[] = []
+
+export default function StatusSelector({ value, onChange }: StatusSelectorProps) {
   const [statusList, setStatusList] = useState<StatusOption[]>(initialStatusList)
-  const [selectedStatus, setSelectedStatus] = useState<StatusOption | null>(null)
   const [modalVisible, setModalVisible] = useState(false)
   const [newStatusName, setNewStatusName] = useState('')
   const [newStatusColor, setNewStatusColor] = useState('#1890ff')
+  const [newType, setNewType] = useState('customer_status')
+
+  const selectedStatus = statusList.find(s => s.id === value) || null
 
   const handleAddStatus = () => {
     if (!newStatusName.trim()) return
-    const newStatus: StatusOption = { label: newStatusName, color: newStatusColor }
-    setStatusList([...statusList, newStatus])
-    setSelectedStatus(newStatus)
+    const newId = Math.max(...statusList.map(s => s.id)) + 1
+    const newStatus: StatusOption = { id: newId, label: newStatusName, color: newStatusColor, type: newType }
+    const updated = [...statusList, newStatus]
+    setStatusList(updated)
+    onChange?.(newStatus.id)
     setNewStatusName('')
     setNewStatusColor('#1890ff')
     setModalVisible(false)
@@ -33,8 +41,8 @@ export default function StatusSelector({ label }: { label: string }) {
 
   const menu = (
     <Menu>
-      {statusList.map((status, index) => (
-        <Menu.Item key={index} onClick={() => setSelectedStatus(status)}>
+      {statusList.map(status => (
+        <Menu.Item key={status.id} onClick={() => onChange?.(status.id)}>
           <Tag color={status.color}>{status.label}</Tag>
         </Menu.Item>
       ))}
@@ -48,7 +56,7 @@ export default function StatusSelector({ label }: { label: string }) {
   return (
     <div>
       <Dropdown overlay={menu} trigger={['click']}>
-        <Button style = {{ border: 'none' }}>
+        <Button style={{ border: 'none' }}>
           {selectedStatus ? (
             <Tag color={selectedStatus.color} style={{ marginRight: 8 }}>
               {selectedStatus.label}

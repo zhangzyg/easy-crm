@@ -77,6 +77,9 @@ export default function CustomerDetail() {
     const [contactData, setContactData] = useState<{ contacts: Contact[] }>({
         contacts: [],
     });
+    const [editingContactId, setEditingContactId] = useState<string | null>(null);
+    const [deleteContactModalVisible, setDeleteContactModalVisible] = useState(false);
+    const [toDeleteContact, setToDeleteContact] = useState<Contact | null>(null);
 
     const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
     const [followUpForm] = Form.useForm();
@@ -113,34 +116,34 @@ export default function CustomerDetail() {
         }
     ];
 
+
     const handleContactEdit = (record: Contact) => {
-        const editData = contactData.contacts.map(contact => {
-            if (contact.id === record.id) {
-                contact.mail = record.mail;
-                contact.name = record.name;
-                contact.phone = record.phone;
-            }
-            return contact;
-        })
-        setContactData(editData);
         contactForm.setFieldsValue(record);
+        setEditingContactId(record.id);
         setIsContactModalOpen(true);
-    }
+    };
 
     const handleContactDelete = (record: Contact) => {
-        Modal.confirm({
-            title: '确认删除该联系人吗？',
-            okText: '删除',
-            cancelText: '取消',
-            onOk: () => {
-                setData(prev => ({
-                    ...prev,
-                    contacts: prev.contacts.filter((c: Contact) => c.id !== record.id)
-                }));
-                message.success('联系人已删除');
-            }
-        });
+        setToDeleteContact(record);
+        setDeleteContactModalVisible(true);
     }
+
+    const handleDeleteContactOk = () => {
+        if (toDeleteContact) {
+            setContactData(prev => ({
+                ...prev,
+                contacts: prev.contacts.filter(c => c.id !== toDeleteContact.id)
+            }));
+            message.success('联系人已删除');
+        }
+        setDeleteContactModalVisible(false);
+        setToDeleteContact(null);
+    };
+
+    const handleDeleteContactCancel = () => {
+        setDeleteContactModalVisible(false);
+        setToDeleteContact(null);
+    };
 
     const projectColumns: ColumnsType<Project> = [
         { title: '项目名称', dataIndex: 'name', key: 'name' },
@@ -229,26 +232,41 @@ export default function CustomerDetail() {
     const handleAddContact = async () => {
         try {
             const values = await contactForm.validateFields();
-            const newContact: Contact = {
-                id: values.id,
+            const contact: Contact = {
+                id: editingContactId || Date.now().toString(), //TODO: will replace id for new 
                 name: values.name,
                 mail: values.mail,
                 phone: values.phone,
             };
-            setContactData(prev => ({
+
+            setData(prev => ({
                 ...prev,
-                projects: [newContact, ...prev.contacts],
+                contacts: editingContactId
+                    ? prev.contacts.map(c => (c.id === editingContactId ? contact : c))
+                    : [contact, ...prev.contacts],
             }));
 
             setIsContactModalOpen(false);
             contactForm.resetFields();
-            message.success('联系人添加成功');
-        } catch (err) {
+            setEditingContactId(null);
+            message.success(editingContactId ? '联系人已更新' : '联系人添加成功');
+        } catch {
             message.error('请完善联系人信息');
         }
     };
 
     const onDeleteCustomer = () => {
+        Modal.confirm({
+            title: '确认删除该客户？',
+            content: '删除后将无法恢复，是否继续？',
+            okText: '确认删除',
+            okType: 'danger',
+            cancelText: '取消',
+            onOk: () => {
+                message.success('客户已删除');
+                // TODO: 调用实际删除 API 或跳转页面
+            }
+        });
 
     }
 
@@ -366,6 +384,16 @@ export default function CustomerDetail() {
                     extra={<Button type="primary" onClick={() => setIsContactModalOpen(true)}>添加联系人</Button>}
                 >
                     <Table rowKey="mail" dataSource={data.contacts} columns={contactColumns} pagination={false} />
+                    <Modal
+                        open={deleteContactModalVisible}
+                        title="确认删除该联系人吗？"
+                        okText="删除"
+                        cancelText="取消"
+                        onOk={handleDeleteContactOk}
+                        onCancel={handleDeleteContactCancel}
+                    >
+                        <p>删除后将无法恢复，确定要删除吗？</p>
+                    </Modal>
                 </Card>
 
                 <Modal

@@ -46,10 +46,10 @@ export interface Project {
     created_date: Date;
     status_id: number;
     customer_id: string;
-
     type?: ProjectType;
     status?: ProjectStatus;
     customer?: Customer;
+    followUps?: Array<FollowUp>;
 }
 
 export interface ProjectType {
@@ -59,6 +59,25 @@ export interface ProjectType {
 }
 
 export interface ProjectStatus {
+    id: number;
+    label: string;
+    color: string;
+}
+
+export interface FollowUp {
+  id: string;
+  stage: string;
+  status_id: number;
+  created_date: Date;
+}
+
+export interface CustomerFollowUp {
+    id: string;
+    content: string;
+    created_time: Date;
+}
+
+export interface FollowUpStatus {
     id: number;
     label: string;
     color: string;

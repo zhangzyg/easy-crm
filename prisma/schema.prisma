@@ -44,6 +44,15 @@ model Customer {
   created_date DateTime @default(now())
   contacts Contact[]
   projects Project[]
+  customerFollowUps []
+}
+
+model CustomerFollowUp {
+  id String @id @default(uuid())
+  content String
+  created_time DateTime @default(now())
+  customer_id String
+  customer    Customer @relation(fields: [customer_id], references: [id])
 }
 
 model Contact {
@@ -69,6 +78,7 @@ model Project {
   status          ProjectStatus @relation(fields: [status_id], references: [id])
   customer_id     String
   customer        Customer @relation(fields: [customer_id], references: [id])
+  follow_up       FollowUp[]
   @@unique([customer_id, name])
 }
 
@@ -84,8 +94,24 @@ model ProjectStatus {
   id    Int    @id @default(autoincrement())
   label String @unique
   color String @unique
-
   projects Project[]
+}
+
+model FollowUp {
+  id String @id @default(uuid())
+  stage String
+  status_id Int
+  status    FollowUpStatus @relation(fields: [status_id], references: [id])
+  project_time Date
+  project_id String
+  project    Project   @relation(fields: [project_id], references: [id])
+}
+
+model FollowUpStatus {
+  id    Int    @id @default(autoincrement())
+  label String @unique
+  color String @unique
+  followUps FollowUp[]
 }
 
 
