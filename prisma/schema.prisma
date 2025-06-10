@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  label String @unique
+  color String @unique
+  customers Customer[]
+}
+
+model Status {
+  id    Int    @id @default(autoincrement())
+  label String @unique
+  color String @unique
+  customers Customer[]
+}
+
+//customer 
+//客户多个联系人，多个项目
+model Customer {
+  id        String @unique
+  name      String
+  status_id Int
+  status    Status @relation(fields: [status_id], references: [id])
+  tag_id    Int
+  tag       Tag @relation(fields: [tag_id], references: [id])
+  region    String
+  coordinator String
+  position String
+  recommand_person       String
+  created_date DateTime @default(now())
+  contacts Contact[]
+  projects Project[]
+}
+
+model Contact {
+  id String @id @default(uuid())
+  name String
+  mail String
+  phone String
+  customer_id String
+  customer    Customer @relation(fields: [customer_id], references: [id])
+}
+
+//project
+//一个项目对应一个客户，一个客户有多个项目
+model Project {
+  id  String @unique
+  name String 
+  type_id         Int
+  type            ProjectType @relation(fields: [type_id], references: [id])
+  amount Decimal
+  paid Decimal
+  created_date DateTime @default(now())
+  status_id       Int
+  status          ProjectStatus @relation(fields: [status_id], references: [id])
+  customer_id     String
+  customer        Customer @relation(fields: [customer_id], references: [id])
+  @@unique([customer_id, name])
+}
+
+model ProjectType {
+  id    Int    @id @default(autoincrement())
+  label String @unique
+  color String @unique
+
+  projects Project[]
+}
+
+model ProjectStatus {
+  id    Int    @id @default(autoincrement())
+  label String @unique
+  color String @unique
+
+  projects Project[]
+}
+
+

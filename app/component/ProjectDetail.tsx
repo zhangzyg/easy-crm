@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, Descriptions, Table, Button, Space, Modal, Form, Input, DatePicker, Select } from 'antd';
+import { Card, Descriptions, Table, Button, Space, Modal, Form, Input, DatePicker, Select, message } from 'antd';
 import { useState } from 'react';
 import BackButton from './BackButton';
 
@@ -13,10 +13,19 @@ interface ProjectStep {
     status: string;
 }
 
+interface ProjectDetail {
+    customerId: string;
+    productName: string;
+    projectType: string;
+    quoteAmount: string;
+    createdAt: string;
+}
+
 export default function ProjectDetail() {
     const [steps, setSteps] = useState<ProjectStep[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form] = Form.useForm();
+    const [editMode, setEditMode] = useState(false);
 
     const handleAddStep = () => {
         form.validateFields().then(values => {
@@ -61,20 +70,107 @@ export default function ProjectDetail() {
         },
     ];
 
+    const [data, setData] = useState<ProjectDetail>({
+        customerId: 'CUS-20240601',
+        productName: '企业级CRM系统',
+        projectType: '软件定制开发',
+        quoteAmount: '¥ 120,000',
+        createdAt: '2025-06-07',
+    });
+
+    const handleEdit = () => {
+        setEditMode(true);
+        form.setFieldsValue(data);
+    };
+
+    const handleCancel = () => {
+        setEditMode(false);
+        form.resetFields();
+    };
+
+    const handleSave = async () => {
+        try {
+            const values = await form.validateFields();
+            setData(values);
+            setEditMode(false);
+            message.success('保存成功');
+        } catch (error) {
+            message.error('请检查输入项');
+        }
+    };
+
+    const onDeleteProject = () => {
+        //open a popover, 确定要删除, 确定，取消
+    }
+
     return (
         <div style={{ padding: 24 }}>
-            <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <BackButton></BackButton>
+                <Button danger onClick={() => onDeleteProject()}>删除</Button>
             </div>
             <div style={{ padding: 24 }}>
-                <Card title="项目详情" variant={'borderless'} style={{ marginBottom: 24 }}>
-                    <Descriptions bordered column={2}>
-                        <Descriptions.Item label="签单客户编号">CUS-20240601</Descriptions.Item>
-                        <Descriptions.Item label="产品名称">企业级CRM系统</Descriptions.Item>
-                        <Descriptions.Item label="项目类型">软件定制开发</Descriptions.Item>
-                        <Descriptions.Item label="报价金额">¥ 120,000</Descriptions.Item>
-                        <Descriptions.Item label="项目创建时间">2025-06-07</Descriptions.Item>
-                    </Descriptions>
+                <Card
+                    title="项目详情"
+                    style={{ marginBottom: 24 }}
+                    extra={
+                        editMode ? (
+                            <Space>
+                                <Button type="primary" onClick={handleSave}>保存</Button>
+                                <Button onClick={handleCancel}>取消</Button>
+                            </Space>
+                        ) : (
+                            <Button onClick={handleEdit}>编辑</Button>
+                        )
+                    }
+                >
+                    <Form form={form} layout="vertical">
+                        <Descriptions bordered column={2}>
+                            <Descriptions.Item label="签单客户编号" span={1}>
+                                {editMode ? (
+                                    <Form.Item name="customerId" rules={[{ required: true }]} noStyle>
+                                        <Input />
+                                    </Form.Item>
+                                ) : (
+                                    data.customerId
+                                )}
+                            </Descriptions.Item>
+
+                            <Descriptions.Item label="产品名称" span={1}>
+                                {editMode ? (
+                                    <Form.Item name="productName" rules={[{ required: true }]} noStyle>
+                                        <Input />
+                                    </Form.Item>
+                                ) : (
+                                    data.productName
+                                )}
+                            </Descriptions.Item>
+
+                            <Descriptions.Item label="项目类型" span={1}>
+                                {editMode ? (
+                                    <Form.Item name="projectType" rules={[{ required: true }]} noStyle>
+                                        <Input />
+                                    </Form.Item>
+                                ) : (
+                                    data.projectType
+                                )}
+                            </Descriptions.Item>
+
+                            <Descriptions.Item label="报价金额" span={1}>
+                                {editMode ? (
+                                    <Form.Item name="quoteAmount" rules={[{ required: true }]} noStyle>
+                                        <Input />
+                                    </Form.Item>
+                                ) : (
+                                    data.quoteAmount
+                                )}
+                            </Descriptions.Item>
+
+                            <Descriptions.Item label="项目创建时间" span={2}>
+                                    {data.createdAt}
+                            </Descriptions.Item>
+                        </Descriptions>
+                    </Form>
                 </Card>
 
                 <Card
