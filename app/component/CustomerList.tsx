@@ -25,9 +25,9 @@ interface CustomerInfo {
 }
 
 const data: CustomerInfo[] = [
-    { id: '1', name: '公司A', contact: [{ name: '张三', mail: 'test@mail.com', phones: ['123', '45s6'] }, { name: 'a', mail: 'test@mail.com', phones: ['123', '45s6'] }], status: '新建', recommandPerson: 'a', createdDate: new Date()},
-    { id: '2', name: '公司B', contact: [{ name: '李四', mail: 'test2@mail.com', phones: ['123', '45s6'] }, { name: 'b', mail: 'test2@mail.com', phones: ['1231', '45s67'] }], status: '新建', recommandPerson: 'b', createdDate: new Date()},
-    { id: '3', name: '公司C', contact: [{ name: '王五', mail: 'test3@mail.com', phones: ['123', '45s6'] }, { name: 'c', mail: 'test3@mail.com', phones: ['1232', '45s68'] }], status: '新建', recommandPerson: 'c', createdDate: new Date()},
+    { id: '1', name: '公司A', contact: [{ name: '张三', mail: 'test@mail.com', phones: ['123', '45s6'] }, { name: 'a', mail: 'test@mail.com', phones: ['123', '45s6'] }], status: '', recommandPerson: 'a', createdDate: new Date()},
+    { id: '2', name: '公司B', contact: [{ name: '李四', mail: 'test2@mail.com', phones: ['123', '45s6'] }, { name: 'b', mail: 'test2@mail.com', phones: ['1231', '45s67'] }], status: '', recommandPerson: 'b', createdDate: new Date()},
+    { id: '3', name: '公司C', contact: [{ name: '王五', mail: 'test3@mail.com', phones: ['123', '45s6'] }, { name: 'c', mail: 'test3@mail.com', phones: ['1232', '45s68'] }], status: '', recommandPerson: 'c', createdDate: new Date()},
 ]
 
 const selectedKeys: Key[] = [];

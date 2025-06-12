@@ -3,26 +3,21 @@
 import { useEffect, useState } from "react";
 import { Button, Dropdown, Menu, Modal, Input, Tag } from "antd";
 import { SketchPicker } from "react-color";
+import { Status } from "../generated/prisma";
 
 interface StatusSelectorProps {
   value?: number;
   onChange?: (id: number) => void;
   type:
-    | "status"
-    | "tag"
-    | "projectType"
-    | "projectStatus"
-    | "followUpStatus";
+  | "status"
+  | "tag"
+  | "projectType"
+  | "projectStatus"
+  | "followUpStatus";
   editable?: boolean | true;
 }
 
-export interface StatusOption {
-  id: number;
-  label: string;
-  color: string;
-}
-
-const initialStatusList: StatusOption[] = [];
+const initialStatusList: Status[] = [];
 
 export default function StatusSelector({
   value,
@@ -31,7 +26,7 @@ export default function StatusSelector({
   editable
 }: StatusSelectorProps) {
   const [statusList, setStatusList] =
-    useState<StatusOption[]>(initialStatusList);
+    useState<Status[]>(initialStatusList);
   const [modalVisible, setModalVisible] = useState(false);
   const [newStatusName, setNewStatusName] = useState("");
   const [newStatusColor, setNewStatusColor] = useState("#1890ff");
@@ -41,7 +36,7 @@ export default function StatusSelector({
   const handleAddStatus = () => {
     if (!newStatusName.trim()) return;
     const newId = Math.max(...statusList.map((s) => s.id)) + 1;
-    const newStatus: StatusOption = {
+    const newStatus: Status = {
       id: newId,
       label: newStatusName,
       color: newStatusColor,
@@ -54,17 +49,19 @@ export default function StatusSelector({
     setModalVisible(false);
   };
 
-  useEffect(() => {
-    if (modalVisible) {
-      fetch(`/backend/api/colorLabel?type=${type}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setStatusList(data);
-          }
-        });
+  const getCustomerStatus = async () => {
+    try {
+      const res = await fetch(`/backend/api/colorLabel?type=${type}`);
+      const customerStatusList = await res.json();
+      setStatusList(customerStatusList);
+    } catch (err) {
+      console.error("获取状态列表失败", err);
     }
-  }, [modalVisible, type]);
+  };
+
+  useEffect(() => {
+    getCustomerStatus();
+  }, [type]);
 
   const menu = (
     <Menu>
@@ -83,7 +80,7 @@ export default function StatusSelector({
   return (
     <div>
       <Dropdown overlay={menu} trigger={["click"]} disabled={!editable}>
-        <Button style={{ border: "none" }} >
+        <Button style={{ border: "none" }}>
           {selectedStatus ? (
             <Tag color={selectedStatus.color} style={{ marginRight: 8 }}>
               {selectedStatus.label}

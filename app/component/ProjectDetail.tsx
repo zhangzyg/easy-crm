@@ -1,9 +1,11 @@
 'use client';
 
 import { Card, Descriptions, Table, Button, Space, Modal, Form, Input, DatePicker, Select, message } from 'antd';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import BackButton from './BackButton';
 import { genProjectId } from '../backend/util';
+import { Status } from '../generated/prisma';
+import { get } from 'http';
 
 const { Option } = Select;
 
@@ -52,6 +54,16 @@ export default function ProjectDetail() {
         });
 
     };
+
+    // useEffect(async () => {
+    //     if(isModalOpen) {
+    //         const colorLabel = await fetch('/backend/api/colorLabel', {
+    //             method: 'GET',
+    //             headers: { 'Content-Type': 'application/json' },
+    //         })
+    //         setCustomerStatus(colorLabel); 
+    //     }
+    // } ,[isModalOpen]);
 
     const columns = [
         {
