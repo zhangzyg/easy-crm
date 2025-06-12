@@ -9,10 +9,10 @@ interface Project {
     productName: string;
     productAmount: number;
     paidAmount: number;
-    status: string;
+    status: number;
 }
 
-const data: Project[] = [{ customerName: '公司A', productName: '项目A', productAmount: 10000, paidAmount: 100, status: '新建' }];
+const data: Project[] = [{ customerName: '公司A', productName: '项目A', productAmount: 10000, paidAmount: 100, status: 1 }];
 
 export default function ProjectList() {
     const columns: ColumnsType<Project> = [
@@ -48,9 +48,9 @@ export default function ProjectList() {
             title: '项目状态',
             dataIndex: 'status',
             key: 'status',
-            render: (status: string) => (
+            render: (status: number) => (
                 <div>
-                    <StatusSelector label={status} />
+                    <StatusSelector value={status} type='projectStatus'/>
                 </div>
             )
         }

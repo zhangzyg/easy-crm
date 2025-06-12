@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import { PlusOutlined, MinusCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import BackButton from './BackButton';
+import StatusSelector from './StatusSelector';
 
 interface Contact {
     id: string;
@@ -313,26 +314,10 @@ export default function CustomerDetail() {
                                 )}
                             </Descriptions.Item>
                             <Descriptions.Item label="状态">
-                                {editMode ? (
-                                    <Form.Item name="status" noStyle>
-                                        <Input />
-                                    </Form.Item>
-                                ) : (
-                                    data.status
-                                )}
+                                <StatusSelector type={'status'} value={Number.parseInt(data.status)} editable={editMode}/>
                             </Descriptions.Item>
                             <Descriptions.Item label="标签">
-                                {editMode ? (
-                                    <Form.Item name="tag" noStyle>
-                                        <Select
-                                            options={tagOptions}
-                                            placeholder="请选择标签"
-                                            style={{ width: 150 }}
-                                        />
-                                    </Form.Item>
-                                ) : (
-                                    data.tag
-                                )}
+                                <StatusSelector type={'tag'} value={Number.parseInt(data.tag)} editable={editMode}/>
                             </Descriptions.Item>
                             <Descriptions.Item label="地区">
                                 {editMode ? (

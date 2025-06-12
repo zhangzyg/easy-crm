@@ -1,4 +1,5 @@
 export interface Customer {
+    //db
     id: string;
     name: string;
     status_id: number;
@@ -7,11 +8,14 @@ export interface Customer {
     coordinator: string;
     position: string;
     recommand_person: string;
-    last_follow_up_time: Date;
     created_date: Date;
-
+    //dto
+    last_follow_up_time?: Date;
     status?: Status; 
     tag?: Tag;
+    projects?: Array<Project>;
+    contacts?: Array<Contact>;
+    followUps?: Array<CustomerFollowUp>;
 }
 
 export interface Tag {
@@ -27,14 +31,15 @@ export interface Status {
 }
 
 export interface Contact {
+    //db
     id: string;
     name: string;
     mail: string;
     phone: string;
     customer_id: string;
-
+    //dto
     phones?: Array<string>;
-    customer: Customer;
+    customer?: Customer;
 }
 
 export interface Project {
@@ -46,6 +51,7 @@ export interface Project {
     created_date: Date;
     status_id: number;
     customer_id: string;
+    //dto
     type?: ProjectType;
     status?: ProjectStatus;
     customer?: Customer;
@@ -67,8 +73,13 @@ export interface ProjectStatus {
 export interface FollowUp {
   id: string;
   stage: string;
+  content: string;
   status_id: number;
   created_date: Date;
+  project_id: string;
+  //dto
+  project?: Project;
+  followUpStatus?: FollowUpStatus;
 }
 
 export interface CustomerFollowUp {

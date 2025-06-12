@@ -124,7 +124,7 @@ export default function CustomerList() {
             ...getColumnSearchProps('status'),
             render: (status: string) => (
                 <div>
-                    <StatusSelector label={status}/>
+                    <StatusSelector value={Number.parseInt(status)} type='status' editable={true}/>
                 </div>
             ),
         },

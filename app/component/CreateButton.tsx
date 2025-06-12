@@ -86,7 +86,7 @@ export default function CreateButton({ createModule }: CreateButtonProps) {
                         name="status_id"
                         rules={[{ required: true, message: '请选择状态' }]}
                     >
-                        <StatusSelector />
+                        <StatusSelector type='status'/>
                     </Form.Item>
 
                      <Form.Item
@@ -94,7 +94,7 @@ export default function CreateButton({ createModule }: CreateButtonProps) {
                         name="tag_id"
                         rules={[{ required: true, message: '请选择标签' }]}
                     >
-                        <StatusSelector />
+                        <StatusSelector type='tag' />
                     </Form.Item>
 
                     <Form.Item label="地区" name="region">
