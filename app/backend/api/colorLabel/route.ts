@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '../../lib/prisma'
+import prisma from '../../lib/prisma'
 
 export async function POST(request: Request) {
     try {
@@ -19,19 +19,19 @@ export async function POST(request: Request) {
 
         switch (type) {
             case 'status':
-                createdRecord = await prisma.Status.create({ data: { label, color } })
+                createdRecord = await prisma.status.create({ data: { label, color } })
                 break
             case 'tag':
-                createdRecord = await prisma.Tag.create({ data: { label, color } })
+                createdRecord = await prisma.tag.create({ data: { label, color } })
                 break
             case 'projectType':
-                createdRecord = await prisma.ProjectType.create({ data: { label, color } })
+                createdRecord = await prisma.projectType.create({ data: { label, color } })
                 break
             case 'projectStatus':
-                createdRecord = await prisma.ProjectStatus.create({ data: { label, color } })
+                createdRecord = await prisma.projectStatus.create({ data: { label, color } })
                 break
             case 'followUpStatus':
-                createdRecord = await prisma.FollowUpStatus.create({ data: { label, color } })
+                createdRecord = await prisma.followUpStatus.create({ data: { label, color } })
                 break
         }
 
@@ -48,7 +48,10 @@ export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const type = searchParams.get('type') as string;
-        const id = searchParams.get('id') as string;
+        const idParam = searchParams.get('id') as string;
+        const id = Number.parseInt(idParam);
+
+        console.log(id);
 
         if (!type || !id) {
             return NextResponse.json({ error: 'Missing required fields: type, label, color' }, { status: 400 })
@@ -62,19 +65,19 @@ export async function DELETE(request: Request) {
 
         switch (type) {
             case 'status':
-                await prisma.Status.delete({ where: { id } })
+                await prisma.status.delete({ where: { id } })
                 break
             case 'tag':
-                prisma.Tag.delete({ where: { id } })
+                prisma.tag.delete({ where: { id } })
                 break
             case 'projectType':
-                prisma.ProjectType.delete({ where: { id } })
+                prisma.projectType.delete({ where: { id } })
                 break
             case 'projectStatus':
-                prisma.ProjectStatus.delete({ where: { id } })
+                prisma.projectStatus.delete({ where: { id } })
                 break
             case 'followUpStatus':
-                prisma.FollowUpStatus.delete({ where: { id } })
+                prisma.followUpStatus.delete({ where: { id } })
                 break
         }
 
@@ -85,10 +88,10 @@ export async function DELETE(request: Request) {
 }
 
 export async function GET(request: Request) {
+    
     try {
         const { searchParams } = new URL(request.url);
         const type = searchParams.get('type') as string;
-
         if (!type) {
             return NextResponse.json({ error: 'Missing required field: type' }, { status: 400 })
         }
@@ -101,6 +104,7 @@ export async function GET(request: Request) {
 
         let records
 
+        console.log(prisma);
         switch (type) {
             case 'status':
                 records = await prisma.status.findMany()

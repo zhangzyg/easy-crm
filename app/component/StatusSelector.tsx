@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button, Dropdown, Menu, Modal, Input, Tag } from "antd";
 import { SketchPicker } from "react-color";
+import { DeleteOutlined } from '@ant-design/icons';
 import { Status } from "../generated/prisma";
 
 interface StatusSelectorProps {
@@ -33,23 +34,23 @@ export default function StatusSelector({
 
   const selectedStatus = statusList.find((s) => s.id === value) || null;
 
-  const handleAddStatus = () => {
+  const handleAddStatus = async () => {
     if (!newStatusName.trim()) return;
-    const newId = Math.max(...statusList.map((s) => s.id)) + 1;
     const newStatus: Status = {
-      id: newId,
+      type,
       label: newStatusName,
       color: newStatusColor,
     };
-    const updated = [...statusList, newStatus];
-    setStatusList(updated);
-    onChange?.(newStatus.id);
-    setNewStatusName("");
-    setNewStatusColor("#1890ff");
+    await fetch(`/backend/api/colorLabel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newStatus)
+    });
+    await getColorLabelList();
     setModalVisible(false);
   };
 
-  const getCustomerStatus = async () => {
+  const getColorLabelList = async () => {
     try {
       const res = await fetch(`/backend/api/colorLabel?type=${type}`);
       const customerStatusList = await res.json();
@@ -59,15 +60,39 @@ export default function StatusSelector({
     }
   };
 
-  useEffect(() => {
-    getCustomerStatus();
-  }, [type]);
+  const onDeleteColorLabel = async (record: Status) => {
+    await fetch(`/backend/api/colorLabel?type=${type}&id=${record.id}`, {
+      method: 'DELETE'
+    });
+    if (value === record.id) {
+      onChange?.(0);
+    }
+  }
 
   const menu = (
     <Menu>
       {statusList.map((status) => (
-        <Menu.Item key={status.id} onClick={() => onChange?.(status.id)}>
-          <Tag color={status.color}>{status.label}</Tag>
+        <Menu.Item
+          key={status.id}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+          onClick={() => onChange?.(status.id)}
+        >
+          <Tag color={status.color} style={{ flex: 1 }}>
+            {status.label}
+          </Tag>
+          <Button
+            type="link"
+            danger
+            onClick={(e) => {
+              e.stopPropagation(); // 阻止菜单关闭
+              onDeleteColorLabel(status);
+            }}
+            icon={<DeleteOutlined />}
+          />
         </Menu.Item>
       ))}
       <Menu.Divider />
@@ -80,7 +105,10 @@ export default function StatusSelector({
   return (
     <div>
       <Dropdown overlay={menu} trigger={["click"]} disabled={!editable}>
-        <Button style={{ border: "none" }}>
+        <Button
+          style={{ border: "none" }}
+          onClick={() => getColorLabelList()}
+        >
           {selectedStatus ? (
             <Tag color={selectedStatus.color} style={{ marginRight: 8 }}>
               {selectedStatus.label}
