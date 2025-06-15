@@ -18,9 +18,7 @@ export default function CreateButton({ createModule }: CreateButtonProps) {
 
     // 打开 Modal
     function onClickCustomerDetail() {
-        if (createModule === '创建用户') {
-            setVisible(true);
-        }
+        setVisible(true);
     }
 
     // Modal 确认按钮事件
@@ -30,7 +28,7 @@ export default function CreateButton({ createModule }: CreateButtonProps) {
             const values = await form.validateFields();
 
             // 调用后端 API 创建客户
-            const res = await fetch('/api/customer', {
+            const res = await fetch('backend/api/customer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(values),
@@ -86,7 +84,7 @@ export default function CreateButton({ createModule }: CreateButtonProps) {
                         name="status_id"
                         rules={[{ required: true, message: '请选择状态' }]}
                     >
-                        <StatusSelector type='status'/>
+                        <StatusSelector type='status' editable={true}/>
                     </Form.Item>
 
                      <Form.Item
@@ -94,7 +92,7 @@ export default function CreateButton({ createModule }: CreateButtonProps) {
                         name="tag_id"
                         rules={[{ required: true, message: '请选择标签' }]}
                     >
-                        <StatusSelector type='tag' />
+                        <StatusSelector type='tag' editable={true}/>
                     </Form.Item>
 
                     <Form.Item label="地区" name="region">

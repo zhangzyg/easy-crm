@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Customer } from "../../model/db";
-import { prisma } from "../../lib/prisma";
+import prisma from '../../lib/prisma'
 import { genCustomerId } from "../../util";
 
 export async function POST(req: NextRequest) {
@@ -31,7 +31,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const customerId = searchParams.get("customerId") as string;
-   
+
     await prisma.followUp.deleteMany({
       where: { project: { customer_id: customerId } },
     });
@@ -90,19 +90,24 @@ export async function GET(req: NextRequest) {
 
   try {
     const customer = await prisma.customer.findUnique({
-      where: { customerId },
-      include: {
-        projects: true,
-        customerFollowUps: true,
-      },
+      where: { id: customerId },
+    });
+    const project = await prisma.project.findMany({
+      where: { customer_id: customerId },
+    });
+    const customerFollowUp = await prisma.customerFollowUp.findMany({
+      where: { customer_id: customerId },
+    });
+    const contact = await prisma.contact.findMany({
+      where: { customer_id: customerId },
     });
     if (!customer) {
-      NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     } else {
-      NextResponse.json(customer, { status: 200 });
+      return NextResponse.json({ customer, contact, project, customerFollowUp }, { status: 200 });
     }
   } catch (error) {
     console.error(error);
-    NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

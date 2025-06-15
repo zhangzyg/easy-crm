@@ -1,5 +1,5 @@
-import { prisma } from "@/app/backend/lib/prisma";
-import { CustomerFollowUp, FollowUp } from "@/app/backend/model/db";
+import prisma from "@/app/backend/lib/prisma";
+import { CustomerFollowUp } from "@/app/backend/model/db";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
@@ -14,8 +14,8 @@ export async function GET(req: Request) {
       );
     }
 
-    const followUps = await prisma.projectFollowUp.findMany({
-      where: { customer_Id: customerId },
+    const followUps = await prisma.customerFollowUp.findMany({
+      where: { customer_id: customerId },
     });
 
     return NextResponse.json(followUps);
@@ -28,11 +28,10 @@ export async function GET(req: Request) {
   }
 }
 
-// 新建 FollowUp
 export async function POST(req: Request) {
   const data = (await req.json()) as CustomerFollowUp;
 
-  const followUp = await prisma.followUp.create({
+  const followUp = await prisma.customerFollowUp.create({
     data,
   });
 
@@ -42,18 +41,18 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   const data = (await req.json()) as CustomerFollowUp;
   const followUpId = data.id;
-  prisma.followUp.update({
+  const res = await prisma.customerFollowUp.update({
     where: { id: followUpId },
     data: data,
   });
 
-  return NextResponse.json({ message: "Customer FollowUp updated successfully" }, { status: 200 });
+  return NextResponse.json(res, { status: 200 });
 }
 
 export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url);
   const followUpId = searchParams.get("followUpId") as string;
-  await prisma.followUp.delete({
+  await prisma.customerFollowUp.delete({
     where: {
       id: followUpId,
     },

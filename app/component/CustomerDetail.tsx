@@ -2,37 +2,45 @@
 
 import { Button, Card, DatePicker, Descriptions, Divider, Form, Input, InputNumber, message, Modal, Select, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PlusOutlined, MinusCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import BackButton from './BackButton';
 import StatusSelector from './StatusSelector';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { CustomerFollowUp } from '@prisma/client';
 
-interface Contact {
-    id: string;
+export interface Contact {
+    id?: string;
     name: string;
     mail: string;
     phone: Array<string>;
+    customer_id: string;
 }
 
 interface Project {
+    id?: string;
     name: string;
-    type: string; // label
+    type_id: number;
+    status_id: number;
     amount: number;
-    paidAmount: number;
-    createdTime: Date;
+    paid: number;
+    created_date: Date;
+    customer_id?: string;
 }
 
 interface FollowUp {
+    id?: string;
     content: string;
     time: Date;
+    customer_id?: string;
 }
 
 interface CustomerInfo {
     id: string;
     name: string;
     contacts: Array<Contact>;
-    status: string;
-    tag: string;
+    status: number;
+    tag: number;
     region: string;
     coordinator: string;
     position: string;
@@ -44,56 +52,130 @@ interface CustomerInfo {
 
 // 示例数据（实际可通过 props 或 API 获取）
 const customerData: CustomerInfo = {
-    id: '123',
-    name: '客户A',
-    contacts: [
-        { id: 'a', name: '联系人1', mail: 'a@example.com', phone: ['13800000000'] },
-        { id: 'b', name: '联系人2', mail: 'b@example.com', phone: ['13900000001', '13700000002'] },
-    ],
-    status: '潜在客户',
-    tag: '重要',
-    region: '上海',
-    coordinator: '张三',
-    position: '商务经理',
-    projects: [
-        { name: '项目A', type: '咨询', amount: 100000, paidAmount: 10000, createdTime: new Date('2024-01-01') },
-    ],
-    followUps: [
-        { content: '首次电话沟通', time: new Date('2024-02-01') },
-        { content: '发出初步方案', time: new Date('2024-02-10') },
-    ],
-    createdTime: new Date('2024-01-01'),
-    recommand: '百度引荐',
+    id: '',
+    name: '',
+    contacts: [],
+    status: 1,
+    tag: 1,
+    region: '',
+    coordinator: '',
+    position: '',
+    projects: [],
+    followUps: [],
+    createdTime: new Date(),
+    recommand: '',
 };
 
-const tagOptions = [
-    { label: '高潜力', value: 'high' },
-    { label: '普通', value: 'normal' },
-    { label: '重要', value: 'important' },
-];
-
 export default function CustomerDetail() {
+
+    const searchParams = useSearchParams();
+    const customerId = searchParams.get('id') as string;
+    const router = useRouter();
+
+    useEffect(() => {
+        getCustomerInfo(customerId);
+    }, [customerId]);
+
     const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+    const [contactModalCreateMode, setContactModalCreateMode] = useState(true);
+    const [contactModalTitle, setContactModalTitle] = useState('');
     const [contactForm] = Form.useForm();
-    const [contactData, setContactData] = useState<{ contacts: Contact[] }>({
-        contacts: [],
-    });
-    const [editingContactId, setEditingContactId] = useState<string | null>(null);
+    const [contactData, setContactData] = useState<Contact[]>([]);
+    const [editingContactName, setEditingContactName] = useState<string | null>(null);
     const [deleteContactModalVisible, setDeleteContactModalVisible] = useState(false);
     const [toDeleteContact, setToDeleteContact] = useState<Contact | null>(null);
 
     const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
     const [followUpForm] = Form.useForm();
-    const [followUpData, setFollowUpData] = useState<{ followUps: FollowUp[] }>({
-        followUps: [],
-    });
-    const [projectData, setProjectData] = useState<{ projects: Project[] }>({ projects: [] });
+    const [editingFollowUp, setEditingFollowUp] = useState<FollowUp | null>(null);
+    const [followUpData, setFollowUpData] = useState<FollowUp[]>([]);
+    const [editingFollowUpId, setEditingFollowUpId] = useState<String>();
+    const [followUpModalCreateMode, setFollowUpModalCreateMode] = useState<Boolean>(true);
+    const [followUpModalTitle, setFollowUpModalTitle] = useState<String>('');
+    const [toDeleteFollowUp, setToDeleteFollowUp] = useState<FollowUp | null>(null);
+    const [deleteFollowUpModalVisible, setDeleteFollowUpModalVisible] = useState(false);
+
+    const [projectData, setProjectData] = useState<Project[]>([]);
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
     const [projectForm] = Form.useForm();
+    const [projectModalCreateMode, setProjectModalCreateMode] = useState<Boolean>(true);
+    const [projectModalTitle, setProjectModalTitle] = useState<String>('');
+    const [toDeleteProject, setToDeleteProject] = useState<Project | null>(null);
+    const [deleteProjectModalVisible, setDeleteProjectModalVisible] = useState(false);
 
     const [editMode, setEditMode] = useState(false);
     const [form] = Form.useForm();
     const [data, setData] = useState<CustomerInfo>(customerData);
+
+    const [deleteCustomerModalVisible, setDeleteCustomerModalVisible] = useState(false);
+
+    useEffect(() => {
+        if (contactModalCreateMode) {
+            setContactModalTitle('添加联系人');
+        } else {
+            setContactModalTitle('更改联系人');
+        }
+    }, [contactModalCreateMode]);
+
+    useEffect(() => {
+        if (followUpModalCreateMode) {
+            setFollowUpModalTitle('添加更进');
+        } else {
+            setFollowUpModalTitle('更改更进');
+        }
+    }, [followUpModalCreateMode]);
+
+    useEffect(() => {
+        if (projectModalCreateMode) {
+            setProjectModalTitle('添加项目');
+        } else {
+            setProjectModalTitle('更改项目');
+        }
+    }, [projectModalCreateMode]);
+
+    const getCustomerInfo = async (customerId: string) => {
+        const res = await fetch(`/backend/api/customer?customerId=${customerId}`);
+        const customer = await res.json();
+        convert2CustomrInfo(customer.customer);
+        convert2Contact(customer.contact);
+        convert2CustomerFollowUp(customer.customerFollowUp);
+        convert2Project(customer.project);
+    };
+
+    const convert2Project = (res: any[]) => {
+        setProjectData(res);
+    }
+
+    const convert2CustomerFollowUp = (res: any[]) => {
+        res.forEach(item => {
+            item.created_time = new Date(item.created_time).toISOString().split('T')[0];
+        })
+        setFollowUpData(res);
+    }
+
+    const convert2Contact = (res: any[]) => {
+        const map = new Map<string, Contact>();
+
+        res.forEach(contact => {
+            const key = `${contact?.name}-${contact?.mail}-${contact?.customer_id}`;
+
+            if (!map.has(key)) {
+                map.set(key, {
+                    id: contact.id,
+                    name: contact.name,
+                    mail: contact.mail,
+                    phone: [contact.phone],
+                    customer_id: contact.customer_id,
+                });
+            } else {
+                map.get(key)!.phone.push(contact.phone);
+            }
+        });
+        let contacts: Contact[] = [];
+        map.values().forEach(contact => contacts.push(contact));
+
+        setContactData(contacts);
+    };
 
     const contactColumns: ColumnsType<Contact> = [
         { title: '姓名', dataIndex: 'name', key: 'name' },
@@ -102,7 +184,7 @@ export default function CustomerDetail() {
             title: '电话',
             dataIndex: 'phone',
             key: 'phone',
-            render: (phones: string[]) => phones.join(', ')
+            render: (phones: string[]) => phones?.join(', ')
         },
         {
             title: '',
@@ -120,8 +202,9 @@ export default function CustomerDetail() {
 
     const handleContactEdit = (record: Contact) => {
         contactForm.setFieldsValue(record);
-        setEditingContactId(record.id);
         setIsContactModalOpen(true);
+        setEditingContactName(record.name);
+        setContactModalCreateMode(false);
     };
 
     const handleContactDelete = (record: Contact) => {
@@ -129,12 +212,12 @@ export default function CustomerDetail() {
         setDeleteContactModalVisible(true);
     }
 
-    const handleDeleteContactOk = () => {
+    const handleDeleteContactOk = async () => {
         if (toDeleteContact) {
-            setContactData(prev => ({
-                ...prev,
-                contacts: prev.contacts.filter(c => c.id !== toDeleteContact.id)
-            }));
+            await fetch(`/backend/api/customer/contact?contactName=${toDeleteContact.name}`, {
+                method: 'DELETE'
+            });
+            setContactData(prev => prev.filter(item => item.name !== toDeleteContact.name));
             message.success('联系人已删除');
         }
         setDeleteContactModalVisible(false);
@@ -146,9 +229,42 @@ export default function CustomerDetail() {
         setToDeleteContact(null);
     };
 
+    const handleDeleteFollowUpOk = async () => {
+        if (toDeleteFollowUp) {
+            await fetch(`/backend/api/customer/followup?followUpId=${toDeleteFollowUp.id}`, {
+                method: 'DELETE'
+            });
+            setFollowUpData(prev => prev.filter(item => item.id !== toDeleteFollowUp.id));
+            message.success('更进已删除');
+        }
+        setDeleteFollowUpModalVisible(false);
+        setToDeleteFollowUp(null);
+    }
+
+    const handleDeleteFollowUpCancel = () => {
+        setDeleteFollowUpModalVisible(false);
+        setToDeleteFollowUp(null);
+    };
+
     const projectColumns: ColumnsType<Project> = [
-        { title: '项目名称', dataIndex: 'name', key: 'name' },
-        { title: '项目类型', dataIndex: 'type', key: 'type' },
+        {
+            title: '项目名称',
+            dataIndex: 'name',
+            key: 'name',
+            render: (_, record: Project) => (
+                <Button id={record.id} type='link' onClick={() => {
+                    router.push(`/project/detail?id=${record.id}`)
+                }}>{record.name}</Button>
+            )
+        },
+        {
+            title: '项目类型', dataIndex: 'type_id', key: 'type_id',
+            render: (_, record: Project) => (
+                <div>
+                    <StatusSelector value={record.type_id} type='projectType' editable={false} />
+                </div>
+            ),
+        },
         {
             title: '金额',
             dataIndex: 'amount',
@@ -157,21 +273,90 @@ export default function CustomerDetail() {
         },
         {
             title: '创建时间',
-            dataIndex: 'createdTime',
-            key: 'createdTime',
+            dataIndex: 'created_time',
+            key: 'created_time',
             render: (time) => new Date(time).toLocaleDateString()
+        },
+        {
+            title: '',
+            key: 'action',
+            render: (_, record) => (
+                <Space>
+                    <Button type="link" danger onClick={() => handleProjectDelete(record)} icon={<DeleteOutlined />}></Button>
+                </Space>
+            ),
+            width: 100
         }
     ];
+
+    const handleProjectDelete = (record: Project) => {
+        setToDeleteProject(record);
+        setDeleteProjectModalVisible(true);
+    }
+
+    const handleDeleteProjectOk = () => {
+        if (toDeleteProject) {
+            fetch(`/backend/api/project?projectId=${toDeleteProject.id}`, {
+                method: 'DELETE'
+            });
+            const newProjectData = projectData.filter(item => item.id !== toDeleteProject.id);
+            setProjectData(newProjectData);
+            message.success('项目已删除');
+            setDeleteProjectModalVisible(false);
+            setToDeleteProject(null);
+        }
+    }
+
+    const handleDeleteProjectCancel = () => {
+        setDeleteProjectModalVisible(false);
+        setToDeleteProject(null);
+    };
+
+    const handleDeleteCustomerOk = async () => {
+        await fetch(`/backend/api/customer?customerId=${customerId}`, {
+            method: 'DELETE'
+        });
+        message.success('客户已删除');
+        setDeleteCustomerModalVisible(false);
+        router.push('/customer/list');
+    };
+
+    const handleDeleteCustomerCancel = () => {
+        setDeleteCustomerModalVisible(false);
+    };
 
     const followColumns: ColumnsType<FollowUp> = [
         { title: '跟进内容', dataIndex: 'content', key: 'content' },
         {
             title: '时间',
-            dataIndex: 'time',
-            key: 'time',
-            render: (time) => new Date(time).toLocaleString()
+            dataIndex: 'created_time',
+            key: 'created_time',
+            render: (time) => new Date(time).toLocaleDateString()
+        }, {
+            title: '',
+            key: 'action',
+            render: (_, record) => (
+                <Space>
+                    <Button type="link" onClick={() => handleFollowUpEdit(record)} icon={<EditOutlined />}></Button>
+                    <Button type="link" danger onClick={() => handleFollowUpDelete(record)} icon={<DeleteOutlined />}></Button>
+                </Space>
+            ),
+            width: 100
         }
     ];
+
+    const handleFollowUpEdit = (record: FollowUp) => {
+        followUpForm.setFieldsValue(record);
+        setIsFollowUpModalOpen(true);
+        setEditingFollowUpId(record.id);
+        setEditingFollowUp(record);
+        setFollowUpModalCreateMode(false);
+    };
+
+    const handleFollowUpDelete = (record: FollowUp) => {
+        setToDeleteFollowUp(record);
+        setDeleteFollowUpModalVisible(true);
+    }
 
     const handleEdit = () => {
         setEditMode(true);
@@ -183,97 +368,111 @@ export default function CustomerDetail() {
         form.resetFields();
     };
 
-
-    const handleAddFollowUp = async () => {
-        try {
-            const values = await followUpForm.validateFields();
-            const newFollowUp: FollowUp = {
-                content: values.content,
-                time: new Date(), // 你可以自定义格式
-            };
-
-            setFollowUpData(prev => ({
-                ...prev,
-                followUps: [newFollowUp, ...prev.followUps],
-            }));
-
-            setIsFollowUpModalOpen(false);
-            followUpForm.resetFields();
-            message.success('添加成功');
-        } catch {
-            message.error('请输入跟进记录内容');
-        }
-    };
-
     const handleAddProject = async () => {
         try {
             const values = await projectForm.validateFields();
             const newProject: Project = {
                 name: values.name,
-                type: values.type,
+                type_id: values.type_id,
                 amount: values.amount,
-                paidAmount: values.paidAmount,
-                createdTime: values.createdTime.toDate(),
+                paid: values.paid,
+                created_date: values.created_time.toDate(),
+                status_id: values.status_id
             };
 
-            setProjectData(prev => ({
-                ...prev,
-                projects: [newProject, ...prev.projects],
-            }));
+            newProject.customer_id = customerId;
+
+            let updatedProject: Project;
+            const res = await fetch('/backend/api/project', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newProject),
+            });
+            updatedProject = await res.json();
+
+            projectData.push(updatedProject);
+            setProjectData(projectData);
+            message.success('添加成功');
+
 
             setIsProjectModalOpen(false);
             projectForm.resetFields();
             message.success('项目添加成功');
-        } catch {
+        } catch (e) {
             message.error('请检查表单填写是否完整');
+            console.error(e);
         }
     };
 
 
-    const handleAddContact = async () => {
+    const handleAddOrEditContact = async () => {
         try {
             const values = await contactForm.validateFields();
             const contact: Contact = {
-                id: editingContactId || Date.now().toString(), //TODO: will replace id for new 
+                customer_id: customerId,
                 name: values.name,
                 mail: values.mail,
                 phone: values.phone,
             };
 
-            setData(prev => ({
-                ...prev,
-                contacts: editingContactId
-                    ? prev.contacts.map(c => (c.id === editingContactId ? contact : c))
-                    : [contact, ...prev.contacts],
-            }));
+            let updatedContact: Contact;
+            if (contactModalCreateMode) {
+                const res = await fetch('/backend/api/customer/contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(contact),
+                });
+                updatedContact = await res.json();
+            } else {
+                const res = await fetch(`/backend/api/customer/contact?contactName=${editingContactName}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(contact),
+                })
+                updatedContact = await res.json();
+            }
+
+            setContactData(prev => {
+                if (contactModalCreateMode) {
+                    if (prev.find(item => item.name === contact.name)) {
+                        return prev;
+                    }
+                    prev.push(contact);
+                } else {
+                    prev.forEach(c => {
+                        if (c.id === contact.id) {
+                            c = contact;
+                        }// 替换已有联系人
+                        return c;
+                    });
+                }
+                return prev;
+            });
 
             setIsContactModalOpen(false);
             contactForm.resetFields();
-            setEditingContactId(null);
-            message.success(editingContactId ? '联系人已更新' : '联系人添加成功');
+            setEditingContactName(null);
+            message.success(editingContactName ? '联系人已更新' : '联系人添加成功');
         } catch {
             message.error('请完善联系人信息');
         }
     };
 
     const onDeleteCustomer = () => {
-        Modal.confirm({
-            title: '确认删除该客户？',
-            content: '删除后将无法恢复，是否继续？',
-            okText: '确认删除',
-            okType: 'danger',
-            cancelText: '取消',
-            onOk: () => {
-                message.success('客户已删除');
-                // TODO: 调用实际删除 API 或跳转页面
-            }
-        });
-
+        setDeleteCustomerModalVisible(true);
     }
 
     const handleSave = async () => {
         try {
             const values = await form.validateFields();
+            values.status_id = data.status;
+            values.tag_id = data.tag;
+            values.id = data.id;
+            await fetch(`/backend/api/customer`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(values),
+            });
             setData(values);
             setEditMode(false);
             message.success('保存成功');
@@ -282,11 +481,82 @@ export default function CustomerDetail() {
         }
     };
 
+    const convert2CustomrInfo = (customer: any) => {
+        customerData.id = customer.id;
+        customerData.name = customer.name;
+        customerData.status = customer.status_id;
+        customerData.tag = customer.tag_id;
+        customerData.region = customer.region;
+        customerData.coordinator = customer.coordinator;
+        customerData.recommand = customer.recommand_person;
+        customerData.createdTime = customer.created_date;
+        customerData.position = customer.position;
+        setData(customerData);
+    }
+
+    const handleAddOrEditFollowUp = async () => {
+        try {
+            const values = await followUpForm.validateFields();
+            const payload: any = {
+                customer_id: customerId,
+                content: values.content,
+            };
+
+            if (!followUpModalCreateMode) {
+                payload.id = editingFollowUp?.id;
+                const res = await fetch(`/backend/api/customer/followup`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                const result = await res.json();
+
+                const newFollowUpData = followUpData.map(data => {
+                    if (data.id === payload.id) {
+                        data = result;
+                    }
+                    return data;
+                });
+                setFollowUpData(newFollowUpData);
+                message.success('跟进记录已更新');
+            } else {
+                const res = await fetch(`/backend/api/customer/followup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                const result = await res.json();
+                followUpData.push(result);
+                setFollowUpData(followUpData);
+                message.success('添加成功');
+            }
+
+            setIsFollowUpModalOpen(false);
+            followUpForm.resetFields();
+            setEditingFollowUp(null);
+        } catch {
+            message.error('请输入跟进内容');
+        }
+    };
+
     return (
         <div style={{ padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <BackButton></BackButton>
                 <Button danger onClick={() => onDeleteCustomer()}>删除</Button>
+                <Modal
+                    title="确认删除该客户？"
+                    open={deleteCustomerModalVisible}
+                    onOk={handleDeleteCustomerOk}
+                    onCancel={handleDeleteCustomerCancel}
+                    okText="确认删除"
+                    okType="danger"
+                    cancelText="取消"
+                >
+                    <p>删除后将无法恢复，是否继续？</p>
+                </Modal>
             </div>
             <div style={{ padding: 24 }}>
                 {/* 主信息 */}
@@ -314,10 +584,10 @@ export default function CustomerDetail() {
                                 )}
                             </Descriptions.Item>
                             <Descriptions.Item label="状态">
-                                <StatusSelector type={'status'} value={Number.parseInt(data.status)} editable={editMode}/>
+                                <StatusSelector type={'status'} value={data.status} editable={editMode} onChange={(status) => data.status = status} />
                             </Descriptions.Item>
                             <Descriptions.Item label="标签">
-                                <StatusSelector type={'tag'} value={Number.parseInt(data.tag)} editable={editMode}/>
+                                <StatusSelector type={'tag'} value={data.tag} editable={editMode} onChange={(tag) => data.tag = tag} />
                             </Descriptions.Item>
                             <Descriptions.Item label="地区">
                                 {editMode ? (
@@ -356,7 +626,7 @@ export default function CustomerDetail() {
                                 )}
                             </Descriptions.Item>
                             <Descriptions.Item label="创建时间">
-                                {data.createdTime.toLocaleDateString()}
+                                {new Date(customerData.createdTime).toLocaleDateString()}
                             </Descriptions.Item>
                         </Descriptions>
                     </Form>
@@ -366,9 +636,12 @@ export default function CustomerDetail() {
 
                 {/* 联系人 */}
                 <Card title="联系人信息" variant={'borderless'}
-                    extra={<Button type="primary" onClick={() => setIsContactModalOpen(true)}>添加联系人</Button>}
+                    extra={<Button type="primary" onClick={() => {
+                        setIsContactModalOpen(true);
+                        setContactModalCreateMode(true);
+                    }}>添加联系人</Button>}
                 >
-                    <Table rowKey="mail" dataSource={data.contacts} columns={contactColumns} pagination={false} />
+                    <Table rowKey="mail" dataSource={contactData} columns={contactColumns} pagination={false} />
                     <Modal
                         open={deleteContactModalVisible}
                         title="确认删除该联系人吗？"
@@ -382,9 +655,9 @@ export default function CustomerDetail() {
                 </Card>
 
                 <Modal
-                    title="添加联系人"
+                    title={contactModalTitle}
                     open={isContactModalOpen}
-                    onOk={handleAddContact}
+                    onOk={handleAddOrEditContact}
                     onCancel={() => {
                         setIsContactModalOpen(false);
                         contactForm.resetFields();
@@ -449,10 +722,13 @@ export default function CustomerDetail() {
                 <Divider />
 
                 {/* 项目信息 */}
-                <Card title="相关项目" variant={'borderless'}
-                    extra={<Button type="primary" onClick={() => setIsProjectModalOpen(true)}>添加项目</Button>}
+                <Card title={projectModalTitle} variant={'borderless'}
+                    extra={<Button type="primary" onClick={() => {
+                        setIsProjectModalOpen(true);
+                        setProjectModalCreateMode(true);
+                    }}>添加项目</Button>}
                 >
-                    <Table rowKey="name" dataSource={data.projects} columns={projectColumns} pagination={false} />
+                    <Table rowKey="name" dataSource={projectData} columns={projectColumns} pagination={false} />
                 </Card>
 
                 <Modal
@@ -476,11 +752,19 @@ export default function CustomerDetail() {
                         </Form.Item>
 
                         <Form.Item
-                            name="type"
+                            name="type_id"
                             label="类型"
                             rules={[{ required: true, message: '请输入项目类型' }]}
                         >
-                            <Input placeholder="如：软件定制开发" />
+                            <StatusSelector type={'projectType'} editable={true} />
+                        </Form.Item>
+
+                        <Form.Item
+                            name="status_id"
+                            label="状态"
+                            rules={[{ required: true, message: '请输入项目状态' }]}
+                        >
+                            <StatusSelector type={'projectStatus'} editable={true} />
                         </Form.Item>
 
                         <Form.Item
@@ -492,7 +776,7 @@ export default function CustomerDetail() {
                         </Form.Item>
 
                         <Form.Item
-                            name="paidAmount"
+                            name="paid"
                             label="已付款（¥）"
                             rules={[{ required: true, message: '请输入已付款金额' }]}
                         >
@@ -500,7 +784,7 @@ export default function CustomerDetail() {
                         </Form.Item>
 
                         <Form.Item
-                            name="createdTime"
+                            name="created_time"
                             label="创建时间"
                             rules={[{ required: true, message: '请选择创建时间' }]}
                         >
@@ -509,19 +793,33 @@ export default function CustomerDetail() {
                     </Form>
                 </Modal>
 
+                <Modal
+                    open={deleteProjectModalVisible}
+                    title="确认删除该项目吗？"
+                    okText="删除"
+                    cancelText="取消"
+                    onOk={handleDeleteProjectOk}
+                    onCancel={handleDeleteProjectCancel}
+                >
+                    <p>删除后将无法恢复，确定要删除吗？</p>
+                </Modal>
+
                 <Divider />
 
                 {/* 跟进记录 */}
                 <Card title="跟进记录" variant={'borderless'}
-                    extra={<Button type="primary" onClick={() => setIsFollowUpModalOpen(true)}>添加跟进</Button>}
+                    extra={<Button type="primary" onClick={() => {
+                        setIsFollowUpModalOpen(true);
+                        setFollowUpModalCreateMode(true);
+                    }}>添加跟进</Button>}
                 >
-                    <Table rowKey="time" dataSource={data.followUps} columns={followColumns} pagination={false} />
+                    <Table rowKey="time" dataSource={followUpData} columns={followColumns} pagination={false} />
                 </Card>
 
                 <Modal
-                    title="添加跟进记录"
+                    title={followUpModalTitle}
                     open={isFollowUpModalOpen}
-                    onOk={handleAddFollowUp}
+                    onOk={handleAddOrEditFollowUp}
                     onCancel={() => {
                         setIsFollowUpModalOpen(false);
                         followUpForm.resetFields();
@@ -538,6 +836,17 @@ export default function CustomerDetail() {
                             <Input.TextArea rows={6} placeholder="请输入具体的跟进内容..." />
                         </Form.Item>
                     </Form>
+                </Modal>
+
+                <Modal
+                    open={deleteFollowUpModalVisible}
+                    title="确认删除该更进吗？"
+                    okText="删除"
+                    cancelText="取消"
+                    onOk={handleDeleteFollowUpOk}
+                    onCancel={handleDeleteFollowUpCancel}
+                >
+                    <p>删除后将无法恢复，确定要删除吗？</p>
                 </Modal>
             </div>
         </div>

@@ -51,8 +51,6 @@ export async function DELETE(request: Request) {
         const idParam = searchParams.get('id') as string;
         const id = Number.parseInt(idParam);
 
-        console.log(id);
-
         if (!type || !id) {
             return NextResponse.json({ error: 'Missing required fields: type, label, color' }, { status: 400 })
         }
@@ -68,20 +66,20 @@ export async function DELETE(request: Request) {
                 await prisma.status.delete({ where: { id } })
                 break
             case 'tag':
-                prisma.tag.delete({ where: { id } })
+                await prisma.tag.delete({ where: { id } })
                 break
             case 'projectType':
-                prisma.projectType.delete({ where: { id } })
+                await prisma.projectType.delete({ where: { id } })
                 break
             case 'projectStatus':
-                prisma.projectStatus.delete({ where: { id } })
+                await prisma.projectStatus.delete({ where: { id } })
                 break
             case 'followUpStatus':
-                prisma.followUpStatus.delete({ where: { id } })
+                await prisma.followUpStatus.delete({ where: { id } })
                 break
         }
 
-        return NextResponse.json({ msg: 'delete success' }, { status: 200 })
+        return NextResponse.json({ id }, { status: 200 })
     } catch (error: any) {
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
     }
@@ -104,7 +102,6 @@ export async function GET(request: Request) {
 
         let records
 
-        console.log(prisma);
         switch (type) {
             case 'status':
                 records = await prisma.status.findMany()

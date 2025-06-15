@@ -43,12 +43,12 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   const data = (await req.json()) as FollowUp;
   const followUpId = data.id;
-  prisma.followUp.update({
+  const followUp = await prisma.followUp.update({
     where: { id: followUpId },
     data: data,
   });
 
-  return NextResponse.json({ message: "FollowUp updated successfully" }, { status: 200 });
+  return NextResponse.json(followUp, { status: 200 });
 }
 
 export async function DELETE(req: Request) {

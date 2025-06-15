@@ -16,6 +16,7 @@ interface StatusSelectorProps {
   | "projectStatus"
   | "followUpStatus";
   editable?: boolean | true;
+  sendStatusMapToParent?: (map: Status[]) => void;
 }
 
 const initialStatusList: Status[] = [];
@@ -24,7 +25,8 @@ export default function StatusSelector({
   value,
   onChange,
   type,
-  editable
+  editable,
+  sendStatusMapToParent
 }: StatusSelectorProps) {
   const [statusList, setStatusList] =
     useState<Status[]>(initialStatusList);
@@ -32,7 +34,24 @@ export default function StatusSelector({
   const [newStatusName, setNewStatusName] = useState("");
   const [newStatusColor, setNewStatusColor] = useState("#1890ff");
 
-  const selectedStatus = statusList.find((s) => s.id === value) || null;
+  const [selectedStatusId, setSelectedStatusId] = useState<number | null>(value ?? null);
+  const selectedStatus = statusList.find((s) => s.id === selectedStatusId) || null;
+
+  useEffect(() => {
+    getColorLabelList();
+  }, []);
+
+  useEffect(() => {
+    if (sendStatusMapToParent) {
+      sendStatusMapToParent(statusList);
+    }
+  }, [statusList]);
+
+  useEffect(() => {
+    if (value !== undefined) {
+      setSelectedStatusId(value);
+    }
+  }, [value]);
 
   const handleAddStatus = async () => {
     if (!newStatusName.trim()) return;
@@ -64,9 +83,7 @@ export default function StatusSelector({
     await fetch(`/backend/api/colorLabel?type=${type}&id=${record.id}`, {
       method: 'DELETE'
     });
-    if (value === record.id) {
-      onChange?.(0);
-    }
+    setStatusList(statusList.filter(item => item.id !== record.id));
   }
 
   const menu = (
@@ -79,7 +96,10 @@ export default function StatusSelector({
             justifyContent: "space-between",
             alignItems: "center",
           }}
-          onClick={() => onChange?.(status.id)}
+          onClick={() => {
+            onChange?.(status.id); // 通知父组件更新
+            setSelectedStatusId(status.id);
+          }}
         >
           <Tag color={status.color} style={{ flex: 1 }}>
             {status.label}
@@ -106,7 +126,7 @@ export default function StatusSelector({
     <div>
       <Dropdown overlay={menu} trigger={["click"]} disabled={!editable}>
         <Button
-          style={{ border: "none" }}
+          type="text"
           onClick={() => getColorLabelList()}
         >
           {selectedStatus ? (

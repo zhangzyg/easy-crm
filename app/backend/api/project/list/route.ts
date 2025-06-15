@@ -1,32 +1,34 @@
-import { prisma } from "@/app/backend/lib/prisma";
-import { Project } from "@/app/backend/model/db";
+
+import prisma from "@/app/backend/lib/prisma";
+import Decimal from "decimal.js";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
   try {
-    const project = await prisma.project.findMany() as Project[];
+    const project = await prisma.project.findMany();
     const projectDtos = await Promise.all(project.map(async (item) => {
-         const cutomerName = await prisma.customer.findUnique({
-                where: { id: item.customer_id }
-            });
-         const status = await prisma.projectStatus.findUnique({
-                where: { id: item.status_id }
-          });
-        return {
-            projectId: item.id,
-            projectName: item.name,
-            cutomerName,
-            amount: item.amount,
-            paid: item.paid,
-            status
-        };
+      const status = await prisma.projectStatus.findUnique({
+        where: { id: item.status_id }
+      });
+      return {
+        projectId: item.id,
+        projectName: item.name,
+        customer_id: item.customer_id,
+        amount: item.amount,
+        paid: item.paid,
+        status_id: status?.id
+      };
     }));
-    const totalAmount = projectDtos.map(dto => dto.amount).reduce((acc, cur) => acc + cur, 0);
-    const totalPaidAmount = projectDtos.map(dto => dto.paid).reduce((acc, cur) => acc + cur, 0);
+    const totalAmount = projectDtos
+      .map(dto => new Decimal(dto.amount))
+      .reduce((acc, cur) => acc.add(cur), new Decimal(0)).toFixed(2);
+    const totalPaidAmount = projectDtos
+      .map(dto => new Decimal(dto.paid))
+      .reduce((acc, cur) => acc.add(cur), new Decimal(0)).toFixed(2);
     return NextResponse.json({
-        projects: projectDtos,
-        totalAmount,
-        totalPaidAmount
+      projects: projectDtos,
+      totalAmount,
+      totalPaidAmount
     }, { status: 200 });
   } catch (error: any) {
     console.error(error);

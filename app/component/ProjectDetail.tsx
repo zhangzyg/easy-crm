@@ -4,10 +4,9 @@ import { Card, Descriptions, Table, Button, Space, Modal, Form, Input, DatePicke
 import { useEffect, useState } from 'react';
 import BackButton from './BackButton';
 import { genProjectId } from '../backend/util';
-import { Status } from '../generated/prisma';
-import { get } from 'http';
-
-const { Option } = Select;
+import StatusSelector from './StatusSelector';
+import { useRouter, useSearchParams } from 'next/navigation';
+import dayjs from 'dayjs';
 
 export interface ProjectStep {
     id: string;
@@ -21,17 +20,65 @@ export interface ProjectStep {
 interface ProjectDetail {
     customerId: string;
     productName: string;
-    projectType: string;
+    projectType: number;
+    projectStatus: number;
     quoteAmount: string;
     paidAmount: string;
-    createdAt: string;
+    createdAt: any;
 }
 
 export default function ProjectDetail() {
     const [steps, setSteps] = useState<ProjectStep[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form] = Form.useForm();
+    const [stepsForm] = Form.useForm();
     const [editMode, setEditMode] = useState(false);
+
+    const searchParams = useSearchParams();
+    const projectId = searchParams.get('id') as string;
+
+    const router = useRouter();
+
+    useEffect(() => {
+        onLoadProject(projectId);
+    }, [projectId]);
+
+    const onLoadProject = async (projectId: string) => {
+        const promise = await fetch(`/backend/api/project?projectId=${projectId}`, {
+            method: 'GET'
+        })
+        const res = await promise.json();
+        convertProjectInfo(res.project);
+        convertFollowUp(res.followUps);
+    }
+
+    function convertProjectInfo(project: any) {
+        const projectData: ProjectDetail = {
+            customerId: project.customer_id,
+            productName: project.name,
+            projectType: project.type_id,
+            projectStatus: project.status_id,
+            quoteAmount: project.amount,
+            paidAmount: project.paid,
+            createdAt: dayjs(project.created_date)
+        };
+        setData(projectData);
+    }
+
+    function convertFollowUp(followUps: any[]) {
+        const newSteps = followUps.map(item => {
+            const step: ProjectStep = {
+                id: '',
+                date: '',
+                stage: '',
+                status_id: 0,
+                mode: '',
+                project_id: ''
+            };
+            return step;
+        });
+        setSteps(newSteps);
+    }
 
     const handleAddStep = async () => {
         form.validateFields().then(async (values) => {
@@ -54,16 +101,6 @@ export default function ProjectDetail() {
         });
 
     };
-
-    // useEffect(async () => {
-    //     if(isModalOpen) {
-    //         const colorLabel = await fetch('/backend/api/colorLabel', {
-    //             method: 'GET',
-    //             headers: { 'Content-Type': 'application/json' },
-    //         })
-    //         setCustomerStatus(colorLabel); 
-    //     }
-    // } ,[isModalOpen]);
 
     const columns = [
         {
@@ -98,10 +135,11 @@ export default function ProjectDetail() {
     const [data, setData] = useState<ProjectDetail>({
         customerId: '',
         productName: '',
-        projectType: '',
+        projectType: 1,
+        projectStatus: 1,
         quoteAmount: '',
         paidAmount: '',
-        createdAt: '',
+        createdAt: new Date(),
     });
 
     const handleEdit = () => {
@@ -117,6 +155,21 @@ export default function ProjectDetail() {
     const handleSave = async () => {
         try {
             const values = await form.validateFields();
+            const project = {
+                name: values.productName,
+                type_id: values.projectType,
+                status_id: values.projectStatus,
+                amount: values.quoteAmount,
+                paid: values.paidAmount,
+                created_date: new Date(values.createdAt)
+            };
+            project.id = projectId;
+            await fetch('/backend/api/project', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(project),
+            })
+            values.customerId = data.customerId;
             setData(values);
             setEditMode(false);
             message.success('保存成功');
@@ -153,13 +206,7 @@ export default function ProjectDetail() {
                     <Form form={form} layout="vertical">
                         <Descriptions bordered column={2}>
                             <Descriptions.Item label="签单客户编号" span={1}>
-                                {editMode ? (
-                                    <Form.Item name="customerId" rules={[{ required: true }]} noStyle>
-                                        <Input />
-                                    </Form.Item>
-                                ) : (
-                                    data.customerId
-                                )}
+                                <a onClick={() => router.push(`/customer/detail?id=${data.customerId}`)}>{data.customerId}</a>
                             </Descriptions.Item>
 
                             <Descriptions.Item label="产品名称" span={1}>
@@ -173,13 +220,11 @@ export default function ProjectDetail() {
                             </Descriptions.Item>
 
                             <Descriptions.Item label="项目类型" span={1}>
-                                {editMode ? (
-                                    <Form.Item name="projectType" rules={[{ required: true }]} noStyle>
-                                        <Input />
-                                    </Form.Item>
-                                ) : (
-                                    data.projectType
-                                )}
+                                <StatusSelector type={'projectType'} value={data.projectType} editable={editMode} onChange={(type) => data.projectType = type} />
+                            </Descriptions.Item>
+
+                            <Descriptions.Item label="项目状态" span={1}>
+                                <StatusSelector type={'projectStatus'} value={data.projectStatus} editable={editMode} onChange={(status) => data.projectStatus = status} />
                             </Descriptions.Item>
 
                             <Descriptions.Item label="报价金额" span={1}>
@@ -203,7 +248,12 @@ export default function ProjectDetail() {
                             </Descriptions.Item>
 
                             <Descriptions.Item label="项目创建时间" span={2}>
-                                {data.createdAt}
+                                {editMode ? (
+                                    <Form.Item name="createdAt" label="时间" rules={[{ required: true, message: '请选择时间' }]} noStyle>
+                                        <DatePicker style={{ width: '50%' }} />
+                                    </Form.Item>
+                                ) : (dayjs(data.createdAt).format('YYYY/MM/DD'))
+                                }
                             </Descriptions.Item>
                         </Descriptions>
                     </Form>
@@ -223,19 +273,15 @@ export default function ProjectDetail() {
                     onCancel={() => setIsModalOpen(false)}
                     destroyOnClose
                 >
-                    <Form form={form} layout="vertical">
+                    <Form form={stepsForm} layout="vertical">
                         <Form.Item name="date" label="时间" rules={[{ required: true, message: '请选择时间' }]}>
                             <DatePicker style={{ width: '100%' }} />
                         </Form.Item>
                         <Form.Item name="stage" label="阶段名称" rules={[{ required: true, message: '请输入阶段名称' }]}>
                             <Input />
                         </Form.Item>
-                        <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
-                            <Select>
-                                <Option value="已完成">已完成</Option>
-                                <Option value="进行中">进行中</Option>
-                                <Option value="待开始">待开始</Option>
-                            </Select>
+                        <Form.Item name="stageStatus" label="阶段状态" rules={[{ required: true, message: '请输入阶段状态' }]}>
+                            <StatusSelector type={'followUpStatus'} value={0} editable={true}/>
                         </Form.Item>
                     </Form>
                 </Modal>

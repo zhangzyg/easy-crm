@@ -3,14 +3,15 @@
 import { Table, Input, Button, Space } from 'antd'
 import type { ColumnType, ColumnsType } from 'antd/es/table'
 import type { FilterConfirmProps } from 'antd/es/table/interface'
-import { DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons'
-import { useState, useRef, Key } from 'react'
+import { DeleteOutlined, SearchOutlined } from '@ant-design/icons'
+import { useState, useRef, Key, useEffect } from 'react'
 import type { InputRef } from 'antd'
-import StatusSelector, { StatusOption } from './StatusSelector'
+import StatusSelector from './StatusSelector'
+import { useRouter } from 'next/navigation'
 
 interface Contact {
     name: string;
-    mail: string;
+    mail?: string;
     phones: Array<string>;
 }
 
@@ -19,23 +20,81 @@ interface CustomerInfo {
     id: string;
     name: string;
     contact: Array<Contact>;
-    status: string;
+    status: number;
     recommandPerson: string;
     createdDate: Date;
 }
 
-const data: CustomerInfo[] = [
-    { id: '1', name: '公司A', contact: [{ name: '张三', mail: 'test@mail.com', phones: ['123', '45s6'] }, { name: 'a', mail: 'test@mail.com', phones: ['123', '45s6'] }], status: '', recommandPerson: 'a', createdDate: new Date()},
-    { id: '2', name: '公司B', contact: [{ name: '李四', mail: 'test2@mail.com', phones: ['123', '45s6'] }, { name: 'b', mail: 'test2@mail.com', phones: ['1231', '45s67'] }], status: '', recommandPerson: 'b', createdDate: new Date()},
-    { id: '3', name: '公司C', contact: [{ name: '王五', mail: 'test3@mail.com', phones: ['123', '45s6'] }, { name: 'c', mail: 'test3@mail.com', phones: ['1232', '45s68'] }], status: '', recommandPerson: 'c', createdDate: new Date()},
-]
+interface CustomerDB {
+    id: string;
+    name: string;
+    status_id: number;
+    tag_id: number;
+    region: string;
+    coordinator: string;
+    position: string;
+    recommand_person: string;
+    created_date: string;
+    Contact: {
+        name: string;
+        phone: string;
+    }[];
+}
+
+const data: CustomerInfo[] = [];
 
 const selectedKeys: Key[] = [];
 
 export default function CustomerList() {
-    const [searchText, setSearchText] = useState('')
-    const [searchedColumn, setSearchedColumn] = useState('')
-    const searchInput = useRef<InputRef>(null)
+    const router = useRouter();
+
+    const [searchText, setSearchText] = useState('');
+    const [searchedColumn, setSearchedColumn] = useState('');
+    const [customerData, setData] = useState(data);
+    const searchInput = useRef<InputRef>(null);
+    const [statusMap, setStatusMap] = useState<Map<number, string>>(new Map());
+
+    const handleReceiveStatus = (mapFromChild: any[]) => {
+        const map = new Map<number, string>();
+        mapFromChild.forEach(child => map.set(child.id, child.label));
+        setStatusMap(map); 
+    };
+
+    useEffect(() => {
+        (async () => {
+            const res = await fetch(`/backend/api/customer/list`);
+            const customerList = await res.json() as CustomerDB[];
+            const dto = convert2CustomrInfo(customerList);
+            setData(dto);
+        })();
+    }, []);
+
+    function convert2CustomrInfo(dataFromDb: CustomerDB[]): CustomerInfo[] {
+        return dataFromDb.map((item) => {
+            const contactMap = new Map<string, Set<string>>();
+
+            item.Contact.forEach(({ name, phone }) => {
+                if (!contactMap.has(name)) {
+                    contactMap.set(name, new Set());
+                }
+                contactMap.get(name)!.add(phone);
+            });
+
+            const contactArray: Contact[] = Array.from(contactMap.entries()).map(([name, phones]) => ({
+                name,
+                phones: Array.from(phones),
+            }));
+
+            return {
+                id: item.id,
+                name: item.name,
+                contact: contactArray,
+                status: item.status_id,
+                recommandPerson: item.recommand_person,
+                createdDate: new Date(item.created_date),
+            };
+        });
+    }
 
     const getColumnSearchProps = (
         dataIndex: keyof CustomerInfo,
@@ -103,12 +162,19 @@ export default function CustomerList() {
         setSearchText('')
     }
 
+    const onClickCustomerId = (id: string) => {
+        router.push(`/customer/detail?id=${id}`);
+    }
+
     const columns: ColumnsType<CustomerInfo> = [
         {
             title: '客户编号',
             dataIndex: 'id',
             key: 'id',
             sorter: (a, b) => a.id.localeCompare(b.id),
+            render: (id: string) => (
+                <Button type="link" onClick={() => onClickCustomerId(id)}>{id}</Button>
+            )
         },
         {
             title: '客户名称',
@@ -121,10 +187,20 @@ export default function CustomerList() {
             title: '状态',
             dataIndex: 'status',
             key: 'status',
-            ...getColumnSearchProps('status'),
-            render: (status: string) => (
+            ...getColumnSearchProps('status', (record) => statusMap?.get(record.status) || ''),
+            render: (status: string, record: CustomerInfo) => (
                 <div>
-                    <StatusSelector value={Number.parseInt(status)} type='tag' editable={true}/>
+                    <StatusSelector value={Number.parseInt(status)} type='status' editable={true} onChange={(childStatus) => {
+                        status = childStatus.toString();
+                        fetch(`/backend/api/customer`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id: record.id,
+                                status_id: Number.parseInt(status)
+                            }),
+                        });
+                    }} sendStatusMapToParent={handleReceiveStatus} />
                 </div>
             ),
         },
@@ -153,23 +229,7 @@ export default function CustomerList() {
             render: (contact: Contact[]) => (
                 <div>
                     {contact.map((item) => (
-                        item.phones.map((phone, index) =>
-                            <span>
-                                {phone}
-                                {index < item.phones.length - 1 ? <br /> : null}
-                            </span>
-                        )))}
-                </div>
-            ),
-        },
-        {
-            title: '上次跟进时间',
-            dataIndex: 'contact',
-            key: 'contact',
-            render: (contact: Contact[]) => (
-                <div>
-                    {contact.map((item) => (
-                        item.phones.map((phone, index) =>
+                        item.phones?.map((phone, index) =>
                             <span>
                                 {phone}
                                 {index < item.phones.length - 1 ? <br /> : null}
@@ -183,8 +243,6 @@ export default function CustomerList() {
             key: 'actions',
             render: (_, record) => (
                 <Space>
-                    <Button onClick={() => searchFollowUp(record)}>查看</Button>
-                    <Button type="link" onClick={() => handleEdit(record)} icon={<EditOutlined />}></Button>
                     <Button type="link" danger onClick={() => handleDelete(record)} icon={<DeleteOutlined />}></Button>
                 </Space>
             ),
@@ -192,17 +250,13 @@ export default function CustomerList() {
         }
     ]
 
-    const searchFollowUp = (record: CustomerInfo) => {
-        //查看客户更进, popover
+    const handleDelete = async (record: CustomerInfo) => {
+        await fetch(`/backend/api/customer?customerId=${record.id}`, {
+            method: 'DELETE'
+        });
+        const newList = customerData.filter(item => item.id !== record.id);
+        setData(newList);
     }
 
-    const handleEdit = (record: CustomerInfo) => {
-        console.log(record.id);
-    }
-
-    const handleDelete = (record: CustomerInfo) => {
-        console.log(record.id);
-    }
-
-    return <Table columns={columns} dataSource={data} pagination={{ pageSize: 15 }}/>
+    return <Table columns={columns} dataSource={customerData} pagination={{ pageSize: 15 }} />
 }

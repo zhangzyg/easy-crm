@@ -1,59 +1,110 @@
 'use client';
 
-import { Table } from 'antd';
-import StatusSelector, { StatusOption } from './StatusSelector'
+import { Button, Table } from 'antd';
+import StatusSelector from './StatusSelector'
 import { ColumnsType } from 'antd/es/table';
+import BackButton from './BackButton';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface Project {
-    customerName: string;
-    productName: string;
-    productAmount: number;
-    paidAmount: number;
-    status: number;
+    id?: string;
+    customer_id: string;
+    projectName: string;
+    amount: string;
+    paid: string;
+    status_id: number;
 }
 
-const data: Project[] = [{ customerName: '公司A', productName: '项目A', productAmount: 10000, paidAmount: 100, status: 1 }];
+interface Total {
+    totalAmount: number;
+    totalPaidAmount: number;
+}
 
 export default function ProjectList() {
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [total, setTotal] = useState<Total | null>(null);
+    const router = useRouter();
+
+    const loadProjectList = async () => {
+        const res = await fetch('/backend/api/project/list', {
+            method: 'GET'
+        });
+        const result = await res.json();
+        setProjects(result.projects);
+        setTotal({
+            totalAmount: result.totalAmount,
+            totalPaidAmount: result.totalPaidAmount
+        });
+    }
+
+    useEffect(() => {
+        loadProjectList();
+    }, []);
+
+
     const columns: ColumnsType<Project> = [
         {
-            title: '客户名称',
-            dataIndex: 'customerName',
-            key: 'customerName',
-            sorter: (a, b) => a.customerName.localeCompare(b.customerName),
+            title: '客户编号',
+            dataIndex: 'customer_id',
+            key: 'customer_id',
+            render: (customer_id: string) => (
+                <Button type="link" onClick={() => router.push(`/customer/detail?id=${customer_id}`)}>
+                    {customer_id}
+                </Button>
+            )
         },
         {
             title: '项目名称',
-            dataIndex: 'productName',
-            key: 'productName',
-            sorter: (a, b) => a.productName.localeCompare(b.productName),
+            dataIndex: 'projectName',
+            key: 'projectName',
+            sorter: (a, b) => a.projectName.localeCompare(b.projectName),
+            render: (_, record: Project) => (
+                <Button type="link" onClick={() => router.push(`/project/detail?id=${record.id}`)}>
+                    {record.projectName}
+                </Button>
+            )
         },
         {
             title: '项目金额',
-            dataIndex: 'productAmount',
-            key: 'productAmount',
-            render: (productAmount: number) => (
-                <span>{productAmount}元</span>
+            dataIndex: 'amount',
+            key: 'amount',
+            render: (amount: string) => (
+                <span>{amount}元</span>
             ),
         },
         {
             title: '已付款',
-            dataIndex: 'paidAmount',
-            key: 'paidAmount',
-            render: (productAmount: number) => (
-                <span>{productAmount}元</span>
+            dataIndex: 'paid',
+            key: 'paid',
+            render: (paid: string) => (
+                <span>{paid}元</span>
             ),
         },
         {
             title: '项目状态',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status: number) => (
+            dataIndex: 'status_id',
+            key: 'status_id',
+            render: (status_id: number) => (
                 <div>
-                    <StatusSelector value={status} type='projectStatus'/>
+                    <StatusSelector value={status_id} type='projectStatus' editable={false} />
                 </div>
             )
         }
     ];
-    return <Table columns={columns} dataSource={data} pagination={{ pageSize: 15 }}/>;
+    return (
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <BackButton></BackButton>
+                <div style={{ display: 'flex', gap: 16 }}>
+                    <span style={{ color: 'green' }}>项目总支付额: {total?.totalPaidAmount}</span>
+                    <span>项目总额: {total?.totalAmount}</span>
+                </div>
+
+            </div>
+            <div>
+                <Table columns={columns} dataSource={projects} pagination={{ pageSize: 15 }} />
+            </div>
+        </div>
+    );
 }

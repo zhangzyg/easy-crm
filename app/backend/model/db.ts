@@ -86,6 +86,7 @@ export interface CustomerFollowUp {
     id: string;
     content: string;
     created_time: Date;
+    customer_id: string;
 }
 
 export interface FollowUpStatus {
