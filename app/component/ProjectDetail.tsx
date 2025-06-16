@@ -348,7 +348,7 @@ export default function ProjectDetail() {
                 )}
               </Descriptions.Item>
 
-              <Descriptions.Item label="报价金额" span={1}>
+              <Descriptions.Item label="已支付金额" span={1}>
                 {editMode ? (
                   <Form.Item
                     name="paidAmount"

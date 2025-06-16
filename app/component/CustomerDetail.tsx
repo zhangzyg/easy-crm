@@ -274,7 +274,7 @@ export default function CustomerDetail() {
             title: '创建时间',
             dataIndex: 'created_time',
             key: 'created_time',
-            render: (time) => new Date(time).toLocaleDateString()
+            render: (_, record: Project) => new Date(record.created_date).toLocaleDateString()
         },
         {
             title: '',
