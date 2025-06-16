@@ -1,6 +1,5 @@
-import { prisma } from "@/app/backend/lib/prisma";
-import { FollowUp } from "@/app/backend/model/db";
 import { NextResponse } from "next/server";
+import prisma from "../../lib/prisma";
 
 // 获取所有 FollowUps（支持通过 projectId 查询）
 export async function GET(req: Request) {
@@ -31,21 +30,29 @@ export async function GET(req: Request) {
 
 // 新建 FollowUp
 export async function POST(req: Request) {
-  const data = (await req.json()) as FollowUp;
-
+  const data = (await req.json()) as any;
+  console.log(JSON.stringify(data));
   const followUp = await prisma.followUp.create({
-    data,
+    data: {
+      content: data.stage,
+      project_id: data.project_id,
+      project_time: new Date(data.date),
+    },
   });
 
   return NextResponse.json(followUp, { status: 201 });
 }
 
 export async function PUT(req: Request) {
-  const data = (await req.json()) as FollowUp;
+  const data = (await req.json()) as any;
   const followUpId = data.id;
   const followUp = await prisma.followUp.update({
-    where: { id: followUpId },
-    data: data,
+    where: { id: followUpId }, 
+    data: {
+      content: data.stage,
+      project_id: data.project_id,
+      project_time: new Date(data.date),
+    }
   });
 
   return NextResponse.json(followUp, { status: 200 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Customer } from "../../model/db";
-import prisma from '../../lib/prisma'
+import prisma from '../../lib/prisma';
 import { genCustomerId } from "../../util";
 
 export async function POST(req: NextRequest) {

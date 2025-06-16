@@ -98,18 +98,15 @@ model ProjectStatus {
 }
 
 model FollowUp {
-  id           String         @id @default(uuid())
-  stage        String
-  status_id    Int
-  status       FollowUpStatus @relation(fields: [status_id], references: [id])
-  project_time DateTime
-  project_id   String
-  project      Project        @relation(fields: [project_id], references: [id])
+  id               String          @id @default(uuid())
+  content          String
+  project_time     DateTime
+  project_id       String
+  project          Project         @relation(fields: [project_id], references: [id])
 }
 
 model FollowUpStatus {
   id        Int        @id @default(autoincrement())
   label     String     @unique
   color     String     @unique
-  followUps FollowUp[]
 }

@@ -21,12 +21,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
 
 export interface ProjectStep {
-  id: string;
+  id?: string;
   date: string;
   stage: string;
-  status_id: number;
   mode: string;
   project_id: string;
+  status_id ?: number;
 }
 
 interface ProjectDetail {
@@ -50,6 +50,7 @@ export default function ProjectDetail() {
   const [stepsForm] = Form.useForm();
   const [isStepModalCreateMode, setIsStepModalCreateMode] = useState(true);
   const [stepModalTitle, setStepModalTitle] = useState("添加步骤");
+  const [editStep, setEditStep] = useState("");
 
   const searchParams = useSearchParams();
   const projectId = searchParams.get("id") as string;
@@ -85,12 +86,11 @@ export default function ProjectDetail() {
   function convertFollowUp(followUps: any[]) {
     const newSteps = followUps.map((item) => {
       const step: ProjectStep = {
-        id: "",
-        date: "",
-        stage: "",
-        status_id: 0,
+        id: item.id,
+        date: new Date(item.project_time).toISOString().split('T')[0],
+        stage: item.content,
         mode: "",
-        project_id: "",
+        project_id: item.project_id,
       };
       return step;
     });
@@ -98,30 +98,38 @@ export default function ProjectDetail() {
   }
 
   const handleAddOrEditStep = async () => {
-    form.validateFields().then(async (values) => {
+    stepsForm.validateFields().then(async (values) => {
       const newStep: ProjectStep = {
-        id: values.id ? values.id : genProjectId(),
         date: values.date.format("YYYY-MM-DD"),
         stage: values.stage,
-        status_id: values.status_id,
+        status_id: 0,
         mode: "init",
-        project_id: values.project_id,
+        project_id: projectId
       };
-      setSteps([...steps, newStep]);
       setIsModalOpen(false);
       form.resetFields();
       if (isStepModalCreateMode) {
-        await fetch("/backend/api/project/followup", {
+        await fetch("/backend/api/followup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newStep),
         });
+        setSteps([...steps, newStep]);
       } else {
-        await fetch("/backend/api/project/followup", {
+        newStep.id = editStep;
+        await fetch("/backend/api/followup", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newStep),
         });
+        const newSteps = steps.map(step => {
+          if(step.id === newStep.id) {
+            step = newStep;
+          }
+          return step;
+        });
+        setSteps(newSteps);
+        setEditStep('');
       }
     });
   };
@@ -133,14 +141,9 @@ export default function ProjectDetail() {
       key: "date",
     },
     {
-      title: "阶段名称",
+      title: "内容",
       dataIndex: "stage",
       key: "stage",
-    },
-    {
-      title: "状态",
-      dataIndex: "status",
-      key: "status",
     },
     {
       title: "",
@@ -167,9 +170,9 @@ export default function ProjectDetail() {
       id: record.id,
       date: dayjs(record.date),
       stage: record.stage,
-      status_id: record.status_id,
       project_id: record.project_id,
     });
+    setEditStep(record.id as string);
   };
 
   const handleDeleteStep = async (record: ProjectStep) => {
@@ -413,21 +416,10 @@ export default function ProjectDetail() {
             </Form.Item>
             <Form.Item
               name="stage"
-              label="阶段名称"
-              rules={[{ required: true, message: "请输入阶段名称" }]}
+              label="内容"
+              rules={[{ required: true, message: "请输入内容" }]}
             >
               <Input />
-            </Form.Item>
-            <Form.Item
-              name="stageStatus"
-              label="阶段状态"
-              rules={[{ required: true, message: "请输入阶段状态" }]}
-            >
-              <StatusSelector
-                type={"followUpStatus"}
-                value={0}
-                editable={true}
-              />
             </Form.Item>
           </Form>
         </Modal>

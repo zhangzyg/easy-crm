@@ -60,7 +60,7 @@ export default function ProjectList() {
             key: 'projectName',
             sorter: (a, b) => a.projectName.localeCompare(b.projectName),
             render: (_, record: Project) => (
-                <Button type="link" onClick={() => router.push(`/project/detail?id=${record.id}`)}>
+                <Button type="link" onClick={() => router.push(`/project/detail?id=${record.projectId}`)}>
                     {record.projectName}
                 </Button>
             )
