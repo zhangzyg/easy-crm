@@ -50,7 +50,6 @@ interface CustomerInfo {
     recommand: string;
 }
 
-// 示例数据（实际可通过 props 或 API 获取）
 const customerData: CustomerInfo = {
     id: '',
     name: '',
