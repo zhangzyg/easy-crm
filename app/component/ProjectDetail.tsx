@@ -176,7 +176,7 @@ export default function ProjectDetail() {
   };
 
   const handleDeleteStep = async (record: ProjectStep) => {
-    await fetch(`/backend/api/project/followup?followUpId=${record.id}`, {
+    await fetch(`/backend/api/followup?followUpId=${record.id}`, {
       method: "DELETE",
     });
     setSteps(steps.filter((step) => step.id !== record.id));
