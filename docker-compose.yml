@@ -1,4 +1,3 @@
-# docker-compose.yml
 version: '3.9'
 
 services:
@@ -14,6 +13,18 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  nextjs:
+    build: .
+    container_name: nextjs-app
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/nextjsdb
+    command: sh -c "npx prisma generate && npx prisma migrate dev --name init --skip-seed && npm run build && npm start"
 
 volumes:
   postgres_data:
