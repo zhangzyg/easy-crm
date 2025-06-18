@@ -57,7 +57,7 @@ export default function CustomerList() {
     const handleReceiveStatus = (mapFromChild: any[]) => {
         const map = new Map<number, string>();
         mapFromChild.forEach(child => map.set(child.id, child.label));
-        setStatusMap(map); 
+        setStatusMap(map);
     };
 
     useEffect(() => {
@@ -96,71 +96,74 @@ export default function CustomerList() {
         });
     }
 
-    const getColumnSearchProps = (
-        dataIndex: keyof CustomerInfo,
-        getFieldValue?: (record: CustomerInfo) => string
-    ): ColumnType<CustomerInfo> => ({
-        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-            <div style={{ padding: 8 }}>
-                <Input
-                    ref={searchInput}
-                    placeholder={`搜索 ${dataIndex}`}
-                    value={selectedKeys[0]}
-                    onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-                    onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
-                    style={{ marginBottom: 8, display: 'block' }}
-                />
-                <Space>
-                    <Button
-                        type="primary"
-                        onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
-                        icon={<SearchOutlined />}
-                        size="small"
-                        style={{ width: 90 }}
-                    >
-                        搜索
-                    </Button>
-                    <Button
-                        onClick={() => handleReset(clearFilters)}
-                        size="small"
-                        style={{ width: 90 }}
-                    >
-                        重置
-                    </Button>
-                </Space>
-            </div>
-        ),
-        filterIcon: (filtered: boolean) => (
-            <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
-        ),
-        onFilter: (value, record) => {
-            const fieldValue = getFieldValue ? getFieldValue(record) : record[dataIndex];
-            return fieldValue
-                ?.toString()
-                .toLowerCase()
-                .includes((value as string).toLowerCase());
-        },
-        onOpenChange: visible => {
-            if (visible) {
-                setTimeout(() => searchInput.current?.select(), 100);
+    const getColumnSearchProps = <T extends keyof CustomerInfo>(
+        dataIndex: T,
+        customTextGetter?: (record: CustomerInfo) => string
+    ): ColumnType<CustomerInfo> => {
+        return {
+            filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+                <div style={{ padding: 8 }}>
+                    <Input
+                        ref={searchInput}
+                        placeholder={`搜索 ${dataIndex}`}
+                        value={(selectedKeys[0] || '') as string}
+                        onChange={e =>
+                            setSelectedKeys(e.target.value ? [e.target.value] : [])
+                        }
+                        onPressEnter={() => {
+                            confirm();
+                            setSearchText((selectedKeys[0] || '') as string);
+                            setSearchedColumn(dataIndex as string);
+                        }}
+                        style={{ marginBottom: 8, display: 'block' }}
+                    />
+                    <Space>
+                        <Button
+                            type="primary"
+                            onClick={() => {
+                                confirm();
+                                setSearchText((selectedKeys[0] || '') as string);
+                                setSearchedColumn(dataIndex as string);
+                            }}
+                            icon={<SearchOutlined />}
+                            size="small"
+                            style={{ width: 90 }}
+                        >
+                            搜索
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                clearFilters?.();
+                                setSearchText('');
+                            }}
+                            size="small"
+                            style={{ width: 90 }}
+                        >
+                            重置
+                        </Button>
+                    </Space>
+                </div>
+            ),
+            filterIcon: (filtered: boolean) => (
+                <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+            ),
+            onFilter: (value, record) => {
+                const fieldValue = customTextGetter
+                    ? customTextGetter(record)
+                    : record[dataIndex];
+                return fieldValue
+                    ?.toString()
+                    .toLowerCase()
+                    .includes((value as string).toLowerCase());
+            },
+            onFilterDropdownOpenChange: visible => {
+                if (visible) {
+                    setTimeout(() => searchInput.current?.select(), 100);
+                }
             }
-        },
-    });
+        };
+    };
 
-    const handleSearch = (
-        selectedKeys: string[],
-        confirm: FilterConfirmProps,
-        dataIndex: string
-    ) => {
-        confirm()
-        setSearchText(selectedKeys[0])
-        setSearchedColumn(dataIndex)
-    }
-
-    const handleReset = (clearFilters?: () => void) => {
-        clearFilters?.()
-        setSearchText('')
-    }
 
     const onClickCustomerId = (id: string) => {
         router.push(`/customer/detail?id=${id}`);

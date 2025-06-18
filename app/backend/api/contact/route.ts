@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Customer } from '../../model/db';
-import { prisma } from '../../lib/prisma';
+import prisma from '../../lib/prisma';
 
 
 export async function POST(req: NextRequest) {
@@ -32,16 +32,9 @@ export async function DELETE(req: NextRequest) {
     const data: Customer = await req.json();
 
     const createdCustomer = await prisma.customer.delete({
-      data: {
-        id: genCustomerId(),
-        name: data.name,
-        status_id: data.status_id,
-        tag_id: data.tag_id,
-        region: data.region,
-        coordinator: data.coordinator,
-        position: data.position,
-        recommand_person: data.recommand_person
-      },
+      where: {
+        id: data.id
+      }
     });
 
     return NextResponse.json(createdCustomer, { status: 201 });

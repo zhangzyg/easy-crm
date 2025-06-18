@@ -1,10 +1,11 @@
 'use client';
 
 import ProjectDetail from "@/app/component/ProjectDetail";
+import { Suspense } from "react";
 
 export default function ProjectDetailPage() {
-    return (
-        <div>
-            <ProjectDetail />
-        </div>);
+    return (<Suspense fallback={<div>加载中...</div>}>
+        <ProjectDetail />
+    </Suspense>);
+
 }

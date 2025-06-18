@@ -1,15 +1,11 @@
-import BackButton from "@/app/component/BackButton";
+"use client";
+
 import CustomerDetail from "@/app/component/CustomerDetail";
-import { Button } from "antd";
-
-const onDeleteCustomer = () => {
-
-}
+import { Suspense } from "react";
 
 export default function CustomerDetailPage() {
-    return (
-        <div>
-            <CustomerDetail />
-        </div>
+    return (<Suspense fallback={<div>加载中...</div>}>
+        <CustomerDetail />
+    </Suspense>
     );
 }

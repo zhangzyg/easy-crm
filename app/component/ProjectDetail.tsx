@@ -15,7 +15,6 @@ import {
 } from "antd";
 import { useEffect, useState } from "react";
 import BackButton from "./BackButton";
-import { genProjectId } from "../backend/util";
 import StatusSelector from "./StatusSelector";
 import { useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
@@ -26,7 +25,7 @@ export interface ProjectStep {
   stage: string;
   mode: string;
   project_id: string;
-  status_id ?: number;
+  status_id?: number;
 }
 
 interface ProjectDetail {
@@ -52,11 +51,11 @@ export default function ProjectDetail() {
   const [stepModalTitle, setStepModalTitle] = useState("添加步骤");
   const [editStep, setEditStep] = useState("");
 
-  const searchParams = useSearchParams();
-  const projectId = searchParams.get("id") as string;
-
   const router = useRouter();
 
+  const searchParams = useSearchParams();
+  const projectId = searchParams.get('id') as string;
+  
   useEffect(() => {
     onLoadProject(projectId);
   }, [projectId]);
@@ -123,7 +122,7 @@ export default function ProjectDetail() {
           body: JSON.stringify(newStep),
         });
         const newSteps = steps.map(step => {
-          if(step.id === newStep.id) {
+          if (step.id === newStep.id) {
             step = newStep;
           }
           return step;
@@ -213,6 +212,7 @@ export default function ProjectDetail() {
         amount: values.quoteAmount,
         paid: values.paidAmount,
         created_date: new Date(values.createdAt),
+        id: null as any,
       };
       project.id = projectId;
       await fetch("/backend/api/project", {

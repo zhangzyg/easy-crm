@@ -69,6 +69,7 @@ export default function CustomerDetail() {
 
     const searchParams = useSearchParams();
     const customerId = searchParams.get('id') as string;
+
     const router = useRouter();
 
     useEffect(() => {

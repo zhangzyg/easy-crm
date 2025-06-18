@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button, Dropdown, Menu, Modal, Input, Tag } from "antd";
 import { SketchPicker } from "react-color";
 import { DeleteOutlined } from '@ant-design/icons';
-import { Status } from "../generated/prisma";
+import { Status } from "@prisma/client";
 
 interface StatusSelectorProps {
   value?: number;
@@ -55,8 +55,8 @@ export default function StatusSelector({
 
   const handleAddStatus = async () => {
     if (!newStatusName.trim()) return;
-    const newStatus: Status = {
-      type,
+    const newStatus: any = {
+      type: type,
       label: newStatusName,
       color: newStatusColor,
     };

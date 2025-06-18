@@ -1,13 +1,15 @@
 'use client';
 
-import { Button, Table } from 'antd';
+import { Button, Input, InputRef, Space, Table } from 'antd';
 import StatusSelector from './StatusSelector'
-import { ColumnsType } from 'antd/es/table';
+import { ColumnsType, ColumnType } from 'antd/es/table';
 import BackButton from './BackButton';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { SearchOutlined } from '@ant-design/icons';
 
 interface Project {
+    projectId?: any;
     id?: string;
     customer_id: string;
     projectName: string;
@@ -25,6 +27,18 @@ export default function ProjectList() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [total, setTotal] = useState<Total | null>(null);
     const router = useRouter();
+    const [searchText, setSearchText] = useState('');
+    const [searchedColumn, setSearchedColumn] = useState('');
+    const searchInput = useRef<InputRef>(null);
+
+    const [statusMap, setStatusMap] = useState<Map<number, string>>(new Map());
+
+    const handleReceiveStatus = (mapFromChild: any[]) => {
+        const map = new Map<number, string>();
+        mapFromChild.forEach(child => map.set(child.id, child.label));
+        setStatusMap(map);
+    };
+
 
     const loadProjectList = async () => {
         const res = await fetch('/backend/api/project/list', {
@@ -42,6 +56,69 @@ export default function ProjectList() {
         loadProjectList();
     }, []);
 
+    const getColumnSearchProps = (
+        dataIndex: keyof Project,
+        customTextGetter?: (record: Project) => string
+    ): ColumnType<Project> => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+            <div style={{ padding: 8 }}>
+                <Input
+                    ref={searchInput}
+                    placeholder={`搜索 ${dataIndex}`}
+                    value={(selectedKeys[0] || '') as string}
+                    onChange={e =>
+                        setSelectedKeys(e.target.value ? [e.target.value] : [])
+                    }
+                    onPressEnter={() => {
+                        confirm();
+                        setSearchText((selectedKeys[0] || '') as string);
+                        setSearchedColumn(dataIndex as string);
+                    }}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <Space>
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                            confirm();
+                            setSearchText((selectedKeys[0] || '') as string);
+                            setSearchedColumn(dataIndex as string);
+                        }}
+                        icon={<SearchOutlined />}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        搜索
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            clearFilters?.();
+                            setSearchText('');
+                        }}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        重置
+                    </Button>
+                </Space>
+            </div>
+        ),
+        filterIcon: (filtered: boolean) => (
+            <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+        ),
+        onFilter: (value, record) => {
+            const text = customTextGetter
+                ? customTextGetter(record)
+                : record[dataIndex];
+            return text?.toString().toLowerCase().includes((value as string).toLowerCase());
+        },
+        onFilterDropdownOpenChange: visible => {
+            if (visible) {
+                setTimeout(() => searchInput.current?.select(), 100);
+            }
+        }
+    });
+
 
     const columns: ColumnsType<Project> = [
         {
@@ -52,7 +129,8 @@ export default function ProjectList() {
                 <Button type="link" onClick={() => router.push(`/customer/detail?id=${customer_id}`)}>
                     {customer_id}
                 </Button>
-            )
+            ),
+            ...getColumnSearchProps('customer_id')
         },
         {
             title: '项目名称',
@@ -63,7 +141,8 @@ export default function ProjectList() {
                 <Button type="link" onClick={() => router.push(`/project/detail?id=${record.projectId}`)}>
                     {record.projectName}
                 </Button>
-            )
+            ),
+            ...getColumnSearchProps('projectName')
         },
         {
             title: '项目金额',
@@ -85,9 +164,10 @@ export default function ProjectList() {
             title: '项目状态',
             dataIndex: 'status_id',
             key: 'status_id',
+             ...getColumnSearchProps('status_id', (record) => statusMap?.get(record.status_id) || ''),
             render: (status_id: number) => (
                 <div>
-                    <StatusSelector value={status_id} type='projectStatus' editable={false} />
+                    <StatusSelector value={status_id} type='projectStatus' editable={false} sendStatusMapToParent={handleReceiveStatus} />
                 </div>
             )
         }
