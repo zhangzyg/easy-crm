@@ -184,7 +184,7 @@ export default function CustomerDetail() {
             title: '电话',
             dataIndex: 'phone',
             key: 'phone',
-            render: (phones: string[]) => phones?.join(', ')
+            render: (phones: string[]) => phones ? phones?.join(', '):[]
         },
         {
             title: '',
@@ -411,8 +411,8 @@ export default function CustomerDetail() {
             const contact: Contact = {
                 customer_id: customerId,
                 name: values.name,
-                mail: values.mail,
-                phone: values.phone,
+                mail: values.mail ? values.mail : '',
+                phone: values.phone ? values.phone : '',
             };
 
             let updatedContact: Contact;
@@ -434,10 +434,7 @@ export default function CustomerDetail() {
 
             setContactData(prev => {
                 if (contactModalCreateMode) {
-                    if (prev.find(item => item.name === contact.name)) {
-                        return prev;
-                    }
-                    prev.push(contact);
+                    return [...prev, contact];
                 } else {
                     prev.forEach(c => {
                         if (c.id === contact.id) {
@@ -678,7 +675,6 @@ export default function CustomerDetail() {
                             label="邮箱"
                             name="mail"
                             rules={[
-                                { required: true, message: '请输入邮箱地址' },
                                 { type: 'email', message: '请输入有效的邮箱' },
                             ]}
                         >

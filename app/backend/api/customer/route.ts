@@ -32,8 +32,8 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const customerId = searchParams.get("customerId") as string;
 
-    await prisma.followUp.deleteMany({
-      where: { project: { customer_id: customerId } },
+    await prisma.customerFollowUp.deleteMany({
+      where: { customer_id: customerId },
     });
 
     await prisma.project.deleteMany({
