@@ -16,7 +16,7 @@ export async function GET(req: Request) {
         customer_id: item.customer_id,
         amount: item.amount,
         paid: item.paid,
-        status
+        status_id: status?.id
       };
     }));
     const totalAmount = projectDtos

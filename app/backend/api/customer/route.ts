@@ -13,10 +13,10 @@ export async function POST(req: NextRequest) {
         name: data.name,
         status_id: data.status_id,
         tag_id: data.tag_id,
-        region: data.region,
-        coordinator: data.coordinator,
-        position: data.position,
-        recommand_person: data.recommand_person,
+        region: data.region ? data.region : '',
+        coordinator: data.coordinator ? data.coordinator : '',
+        position: data.position ? data.position : '',
+        recommand_person: data.recommand_person ? data.recommand_person : '',
       },
     });
 
